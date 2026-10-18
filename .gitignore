@@ -13,3 +13,4 @@ android/
 .env*.local
 npm-debug.*
 .DS_Store
+.wrangler/

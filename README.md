@@ -16,6 +16,7 @@ Every feature is free. No account, no ads, no tracking, no paywall.
 - **Backup & restore** to a plain `.json` file (with or without images).
 - **Import** from Pocket, Raindrop, Instapaper, Omnivore and browsers (CSV, Netscape HTML, JSON).
 - **Export** as browser bookmarks (HTML) or a spreadsheet (CSV).
+- **Claude (MCP)**, off by default: give Claude a private link so it can search your library and, if you allow it, organize it (move saves, create and nest collections, tag, pin, edit notes). Regenerate or revoke the link any time. See [mcp-server/](mcp-server/README.md).
 
 ## Tech
 
@@ -25,7 +26,9 @@ Expo SDK 58 · React Native 0.88 · Expo Router · expo-sqlite · TypeScript.
 src/app/         screens (Expo Router)
 src/components/  neo-brutalist UI kit, sheets, cards
 src/db/          SQLite schema + queries
-src/lib/         metadata, import/export parsers, backup, reminders, settings
+src/lib/         metadata, import/export parsers, backup, reminders, settings, MCP sync
+src/shared/      wire format shared with the MCP server
+mcp-server/      Cloudflare Worker that serves the Claude connector
 tests/           unit tests for the pure modules
 ```
 
@@ -47,7 +50,9 @@ npx eas-cli@latest build -p android --profile preview
 
 ## Privacy
 
-Your library lives in a local SQLite database on your device. The only network requests SaveMe makes are fetching previews for the links you save, straight from those sites.
+Your library lives in a local SQLite database on your device. By default the only network requests SaveMe makes are fetching previews for the links you save, straight from those sites.
+
+If you turn on **Claude (MCP)**, a text copy of your library (links, titles, notes, tags and collections, never image files) is kept on `mcp-saveme.santiagortega.dev` so Claude can reach it with your private link. Turning it off deletes that copy.
 
 ## License
 

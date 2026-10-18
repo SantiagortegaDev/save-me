@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "saveme-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "routes": [{ "pattern": "mcp-saveme.santiagortega.dev", "custom_domain": true }],
+  "durable_objects": {
+    "bindings": [{ "name": "SPACES", "class_name": "SaveMeSpace" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SaveMeSpace"] }],
+  "observability": { "enabled": true }
+}

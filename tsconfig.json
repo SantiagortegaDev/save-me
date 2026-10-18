@@ -5,6 +5,7 @@
   },
   "exclude": [
     "tests",
-    "node_modules"
+    "node_modules",
+    "mcp-server"
   ]
 }

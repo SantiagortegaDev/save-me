@@ -37,11 +37,16 @@ export async function saveLink(
   return { id, duplicate: false };
 }
 
-export async function refreshMetadata(db: SQLiteDatabase, id: string, url: string): Promise<void> {
+export async function refreshMetadata(
+  db: SQLiteDatabase,
+  id: string,
+  url: string,
+  opts: { keepTitle?: boolean } = {},
+): Promise<void> {
   try {
     const meta = await fetchMetadata(url);
     await updateSave(db, id, {
-      title: meta.title || hostname(url),
+      ...(opts.keepTitle ? {} : { title: meta.title || hostname(url) }),
       description: meta.description,
       thumbnail: meta.thumbnail,
       favicon: meta.favicon,

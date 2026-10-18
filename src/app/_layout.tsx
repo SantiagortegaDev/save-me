@@ -15,6 +15,7 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { getStats } from '../db/repo';
+import { resumeMcpSync, stopMcpSync } from '../lib/mcpSync';
 import { DATABASE_NAME, migrate } from '../db/schema';
 import { scheduleDailyReminder } from '../lib/reminders';
 import { SettingsProvider, useSettings } from '../lib/settings';
@@ -34,6 +35,12 @@ function AppShell() {
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
+
+  // Claude (MCP) sync runs only when the user turned it on.
+  useEffect(() => {
+    void resumeMcpSync(db);
+    return stopMcpSync;
+  }, [db]);
 
   // Keep the daily reminder's text in sync with the current backlog.
   useEffect(() => {

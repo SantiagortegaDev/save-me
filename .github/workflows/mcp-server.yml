@@ -1,0 +1,50 @@
+name: MCP server
+
+on:
+  push:
+    branches: [main]
+    paths: ['mcp-server/**', 'src/shared/**', '.github/workflows/mcp-server.yml']
+  pull_request:
+    paths: ['mcp-server/**', 'src/shared/**', '.github/workflows/mcp-server.yml']
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Typecheck & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  # Opt-in: set the repository variable CLOUDFLARE_DEPLOY=true and the secrets
+  # CLOUDFLARE_API_TOKEN (Workers edit permission) and CLOUDFLARE_ACCOUNT_ID.
+  deploy:
+    name: Deploy to Cloudflare
+    needs: check
+    if: github.ref == 'refs/heads/main' && vars.CLOUDFLARE_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mcp-server/package-lock.json
+      - run: npm ci
+      - run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -11,4 +11,7 @@ config.server.enhanceMiddleware = (middleware) => (req, res, next) => {
   middleware(req, res, next);
 };
 
+// The MCP server is a separate Cloudflare Worker package.
+config.resolver.blockList = [/mcp-server\/.*/];
+
 module.exports = config;

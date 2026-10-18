@@ -80,7 +80,7 @@ export default function SettingsScreen() {
           </Text>
           <Text size="sm">
             SaveMe is free and open source. Unlimited saves, images, collections, sub-collections, tags, Focus Mode, reminders,
-            import and export — no account, no ads, no tracking.
+            import, export and Claude — no account, no ads, no tracking.
           </Text>
         </Card>
 
@@ -113,6 +113,17 @@ export default function SettingsScreen() {
           ) : null}
         </SettingsGroup>
 
+        <Label style={styles.label}>Claude</Label>
+        <SettingsGroup>
+          <SettingsRow
+            icon="cpu"
+            iconColor={colors.lilac}
+            title="Claude (MCP)"
+            subtitle="Let Claude search and organize your library"
+            onPress={() => router.push('/claude')}
+          />
+        </SettingsGroup>
+
         <Label style={styles.label}>Data & storage</Label>
         <SettingsGroup>
           <SettingsRow
@@ -133,7 +144,7 @@ export default function SettingsScreen() {
         </SettingsGroup>
 
         <Text size="xs" color={colors.inkMuted} style={styles.footer}>
-          SaveMe {Constants.expoConfig?.version ?? ''} · MIT License · Your data never leaves your device unless you export it.
+          SaveMe {Constants.expoConfig?.version ?? ''} · MIT License · Your data stays on your device unless you export it or connect Claude.
         </Text>
       </ScrollView>
     </View>
