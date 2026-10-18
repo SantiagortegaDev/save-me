@@ -52,3 +52,9 @@ Your library lives in a local SQLite database on your device. The only network r
 ## License
 
 MIT. SaveMe is an independent project; it uses no code or assets from any other app. See [docs/analysis.md](docs/analysis.md) for how its feature set was researched.
+
+## Download
+
+Every push to `main` builds an APK with GitHub Actions: open the latest run under **Actions → Build Android APK** and download the `SaveMe-apk` artifact. Pushing a tag like `v1.0.0` also attaches the APK to a GitHub release.
+
+These builds are signed with a debug key, so Android will ask you to allow installing from unknown sources. Use your own keystore before publishing to an app store.
