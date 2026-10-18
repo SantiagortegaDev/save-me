@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { Redirect, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
@@ -52,11 +53,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + 120 }]}>
         <View style={styles.header}>
           <View style={styles.brand}>
-            <View style={[styles.logo, brutal.shadowSmall]}>
-              <Text weight="bold" size="lg">
-                S
-              </Text>
-            </View>
+            <Image source={require('../../assets/logo.png')} style={styles.logo} contentFit="contain" accessibilityLabel="SaveMe logo" />
             <View>
               <Text weight="bold" size="xxl">
                 SaveMe
@@ -161,17 +158,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  logo: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '-6deg' }],
-  },
+  logo: { width: 40, height: 50 },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
   stats: { flexDirection: 'row', gap: spacing.sm },
   stat: { flex: 1, padding: spacing.sm + 2, gap: 2 },
