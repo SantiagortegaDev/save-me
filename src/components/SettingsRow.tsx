@@ -6,7 +6,7 @@ import { brutal, colors, spacing } from '../theme';
 import { Icon, Text, type IconName } from './ui';
 
 export function SettingsGroup({ children }: { children: ReactNode }) {
-  return <View style={[styles.group, brutal.shadow]}>{children}</View>;
+  return <View style={styles.group}>{children}</View>;
 }
 
 export function SettingsRow({
@@ -50,7 +50,7 @@ export function SettingsRow({
             haptic.select();
             toggle.onChange(v);
           }}
-          trackColor={{ true: colors.accent, false: '#DDD' }}
+          trackColor={{ true: colors.ink, false: '#D6D6D6' }}
           thumbColor={colors.white}
         />
       ) : (
@@ -58,7 +58,7 @@ export function SettingsRow({
       )}
     </>
   );
-  if (!onPress) return <View style={styles.row}>{content}</View>;
+  if (!onPress) return <View style={[styles.row, brutal.shadowSmall]}>{content}</View>;
   return (
     <Pressable
       accessibilityRole="button"
@@ -66,7 +66,7 @@ export function SettingsRow({
         haptic.tap();
         onPress();
       }}
-      style={({ pressed }) => [styles.row, pressed && { backgroundColor: '#F6F0E2' }]}
+      style={({ pressed }) => [styles.row, pressed ? styles.pressed : brutal.shadowSmall]}
     >
       {content}
     </Pressable>
@@ -74,15 +74,19 @@ export function SettingsRow({
 }
 
 const styles = StyleSheet.create({
-  group: { backgroundColor: colors.card, borderWidth: brutal.border, borderColor: colors.ink, borderRadius: 14, overflow: 'hidden' },
+  group: { gap: spacing.sm + 2 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderColor: '#EAE3D4',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    backgroundColor: colors.card,
+    borderWidth: brutal.border,
+    borderColor: colors.ink,
+    borderRadius: 10,
   },
+  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
   icon: {
     width: 34,
     height: 34,

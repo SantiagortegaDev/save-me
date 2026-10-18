@@ -18,7 +18,9 @@ export type Collection = {
   updated_at: number;
 };
 
-export type CollectionWithCount = Collection & { save_count: number; child_count: number };
+export type CollectionWithCount = Collection & { save_count: number; child_count: number; unseen_count: number };
+
+export type CollectionSort = 'oldest' | 'newest' | 'name' | 'recent';
 
 export type Save = {
   id: string;
@@ -63,19 +65,26 @@ export function notifyChange(): void {
 const COLLECTION_WITH_COUNT = `
   SELECT c.*,
     (SELECT COUNT(*) FROM saves s WHERE s.collection_id = c.id) AS save_count,
-    (SELECT COUNT(*) FROM collections k WHERE k.parent_id = c.id) AS child_count
+    (SELECT COUNT(*) FROM collections k WHERE k.parent_id = c.id) AS child_count,
+    (SELECT COUNT(*) FROM saves s WHERE s.collection_id = c.id AND s.seen = 0) AS unseen_count
   FROM collections c`;
 
-export function listCollections(db: SQLiteDatabase, parentId: string | null = null) {
+const SORT_SQL: Record<CollectionSort, string> = {
+  oldest: 'c.position ASC, c.created_at ASC',
+  newest: 'c.created_at DESC',
+  name: 'c.name COLLATE NOCASE ASC',
+  recent: '(SELECT MAX(s.created_at) FROM saves s WHERE s.collection_id = c.id) DESC NULLS LAST, c.created_at DESC',
+};
+
+export function listCollections(db: SQLiteDatabase, parentId: string | null = null, sort: CollectionSort = 'oldest') {
+  const order = SORT_SQL[sort];
   if (parentId === null) {
     return db.getAllAsync<CollectionWithCount>(
-      `${COLLECTION_WITH_COUNT} WHERE c.parent_id IS NULL
-       ORDER BY c.is_inbox DESC, c.pinned DESC, c.position ASC, c.created_at ASC`,
+      `${COLLECTION_WITH_COUNT} WHERE c.parent_id IS NULL ORDER BY c.is_inbox DESC, c.pinned DESC, ${order}`,
     );
   }
   return db.getAllAsync<CollectionWithCount>(
-    `${COLLECTION_WITH_COUNT} WHERE c.parent_id = ?
-     ORDER BY c.pinned DESC, c.position ASC, c.created_at ASC`,
+    `${COLLECTION_WITH_COUNT} WHERE c.parent_id = ? ORDER BY c.pinned DESC, ${order}`,
     parentId,
   );
 }

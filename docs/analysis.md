@@ -54,4 +54,10 @@ Riesgo residual: el archivo viene de un mirror de terceros; la firma de Google l
 | Focus Mode | Sí | Sí, con modo aleatorio |
 | Recordatorios | Fijos | Hora configurable |
 | Cuentas / analítica | RevenueCat, Firebase | Ninguna |
-| Marca | Tuckii, fuente Sora, mascota | SaveMe, Space Grotesk, icono y paleta propios |
+| Marca | Tuckii, mascota propia | SaveMe, logo propio (marcador sonriente), paleta propia |
+
+## Comparación con Tuckii 1.4.0
+
+Se revisó también `Tuckii-1.4.0-split-apks.zip` (SHA-256 `b9db463a…2c2008`). Es la misma app: mismo paquete y mismo certificado de Play App Signing que la 1.5.0, sin indicios de modificaciones. La 1.4.0 todavía no tiene las pantallas de copia de seguridad ni de sincronización con iCloud, y sus tokens de diseño (colores, bordes, sombras, tipografía) son idénticos a los de la 1.5.0.
+
+La diferencia de diseño con la primera versión de SaveMe estaba en la maquetación, no en la versión de Tuckii. Tomando como referencia las capturas públicas de Google Play, SaveMe adoptó: tarjetas de colección con forma de carpeta, titular grande con barra de guardado rápido, aviso de guardados pendientes, orden de colecciones, Focus Mode oscuro con barra de progreso por segmentos, detalle con imagen a sangre y barra de acciones, etiquetas con forma de etiqueta y ajustes en tarjetas. Toda la implementación es propia; no se usan imágenes, textos ni archivos de Tuckii (Sora es una fuente libre de Google Fonts).

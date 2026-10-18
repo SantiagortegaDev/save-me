@@ -1,8 +1,9 @@
+import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { Redirect, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddSaveSheet } from '../components/AddSaveSheet';
@@ -12,118 +13,205 @@ import { CollectionForm } from '../components/CollectionForm';
 import { useGrid } from '../components/grid';
 import { MoveSheet } from '../components/MoveSheet';
 import { SaveCard } from '../components/SaveCard';
-import { Button, Card, EmptyState, Icon, IconButton, SectionHeader, Text, type IconName } from '../components/ui';
-import { getStats, listCollections, listRecentSaves, type Collection, type Save } from '../db/repo';
+import { Button, EmptyState, Icon, IconButton, Text } from '../components/ui';
+import { getStats, listCollections, listRecentSaves, type Collection, type CollectionSort, type Save } from '../db/repo';
+import { haptic } from '../lib/haptics';
+import { saveLink } from '../lib/saving';
 import { useSettings } from '../lib/settings';
+import { extractUrl, normalizeUrl } from '../lib/url';
 import { useQuery } from '../lib/useQuery';
-import { brutal, colors, spacing } from '../theme';
+import { brutal, colors, fonts, fontSize, radius, spacing } from '../theme';
 
-function StatTile({ label, value, icon, color, onPress }: { label: string; value: number; icon: IconName; color: string; onPress?: () => void }) {
+const SORT_LABELS: Record<CollectionSort, string> = { oldest: 'Oldest', newest: 'Newest', name: 'Name', recent: 'Recently saved' };
+
+// Saves the typed link straight to the Inbox; the "+" opens the full sheet when the field is empty.
+function QuickSave({ onOpenSheet }: { onOpenSheet: () => void }) {
+  const db = useSQLiteContext();
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function paste() {
+    const text = await Clipboard.getStringAsync();
+    const url = extractUrl(text) ?? normalizeUrl(text);
+    if (url) setValue(url);
+    else Alert.alert('Nothing to paste', 'Copy a link first, then tap paste.');
+  }
+
+  async function save() {
+    if (!normalizeUrl(value)) {
+      Alert.alert('Invalid link', 'Please enter a valid http or https link.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await saveLink(db, value);
+      haptic.success();
+      setValue('');
+      if (res.duplicate) Alert.alert('Already saved', 'This link is already in your library.');
+    } catch (error) {
+      Alert.alert('Save failed', error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <Card color={color} onPress={onPress} style={styles.stat} accessibilityLabel={`${value} ${label}`}>
-      <Icon name={icon} size={16} />
-      <Text weight="bold" size="xl">
-        {value}
-      </Text>
-      <Text weight="medium" size="xs">
-        {label}
-      </Text>
-    </Card>
+    <View style={styles.quickRow}>
+      <View style={[styles.quickInput, brutal.shadowSmall]}>
+        <Text weight="bold" color={colors.inkMuted}>
+          #
+        </Text>
+        <TextInput
+          value={value}
+          onChangeText={setValue}
+          placeholder="Paste link to quick save"
+          placeholderTextColor={colors.inkLight}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          returnKeyType="done"
+          onSubmitEditing={() => value.trim() && save()}
+          style={styles.quickText}
+        />
+        <Pressable onPress={paste} hitSlop={8} accessibilityRole="button" accessibilityLabel="Paste link">
+          <Icon name="clipboard" size={18} color={colors.inkMuted} />
+        </Pressable>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={value.trim() ? 'Save link' : 'Save a link or image'}
+        disabled={busy}
+        onPress={() => {
+          haptic.tap();
+          if (value.trim()) void save();
+          else onOpenSheet();
+        }}
+        style={({ pressed }) => [styles.quickButton, pressed ? styles.pressed : brutal.shadowSmall, busy && { opacity: 0.5 }]}
+      >
+        <Icon name="plus" size={24} />
+      </Pressable>
+    </View>
   );
 }
 
 export default function HomeScreen() {
   const db = useSQLiteContext();
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const insets = useSafeAreaInsets();
   const { itemWidth, gap } = useGrid(150);
   const [adding, setAdding] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Collection | null>(null);
   const [moving, setMoving] = useState<Save | null>(null);
+  const sort = settings.collectionSort;
 
   const { data: stats } = useQuery(() => getStats(db), [db]);
-  const { data: collections } = useQuery(() => listCollections(db), [db]);
+  const { data: collections } = useQuery(() => listCollections(db, null, sort), [db, sort]);
   const { data: recent } = useQuery(() => listRecentSaves(db, 12), [db]);
 
   if (!settings.onboarded) return <Redirect href="/onboarding" />;
 
+  function pickSort() {
+    Alert.alert('Sort collections', undefined, [
+      ...(Object.keys(SORT_LABELS) as CollectionSort[]).map((key) => ({
+        text: `${key === sort ? '✓ ' : ''}${SORT_LABELS[key]}`,
+        onPress: () => update({ collectionSort: key }),
+      })),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + 120 }]}>
-        <View style={styles.header}>
-          <View style={styles.brand}>
-            <Image source={require('../../assets/logo.png')} style={styles.logo} contentFit="contain" accessibilityLabel="SaveMe logo" />
-            <View>
-              <Text weight="bold" size="xxl">
-                SaveMe
-              </Text>
-              <Text size="sm" color={colors.inkMuted}>
-                Save it. Find it. Use it.
-              </Text>
-            </View>
-          </View>
-          <View style={styles.headerActions}>
-            <IconButton icon="search" accessibilityLabel="Search" onPress={() => router.push('/search')} />
-            <IconButton icon="settings" accessibilityLabel="Settings" onPress={() => router.push('/settings')} />
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.xxl }]}
+      >
+        <View style={styles.toolbar}>
+          <IconButton icon="settings" accessibilityLabel="Settings" size={38} onPress={() => router.push('/settings')} />
+          <Image source={require('../../assets/logo.png')} style={styles.logo} contentFit="contain" accessibilityLabel="SaveMe" />
+          <View style={styles.toolbarRight}>
+            <IconButton icon="folder-plus" accessibilityLabel="Create collection" size={38} onPress={() => setCreating(true)} />
+            <IconButton icon="search" accessibilityLabel="Search" size={38} onPress={() => router.push('/search')} />
           </View>
         </View>
 
-        <SectionHeader title="Your library" />
-        <View style={styles.stats}>
-          <StatTile label="Collections" value={stats?.collections ?? 0} icon="folder" color={colors.primary} />
-          <StatTile label="Saves" value={stats?.saves ?? 0} icon="bookmark" color={colors.accent} onPress={() => router.push('/collection/all')} />
-          <StatTile label="Pinned" value={stats?.pinned ?? 0} icon="map-pin" color={colors.peach} onPress={() => router.push('/collection/all?filter=pinned')} />
-          <StatTile label="Tags" value={stats?.tags ?? 0} icon="tag" color={colors.lilac} onPress={() => router.push('/search?tab=tags')} />
-        </View>
+        <Text weight="heavy" size="huge" style={styles.headline}>
+          {'Save it now.\nFind it later.'}
+        </Text>
+
+        <QuickSave onOpenSheet={() => setAdding(true)} />
 
         {stats && stats.unseen > 0 ? (
-          <Card color={colors.white} style={styles.focusBanner} onPress={() => router.push('/focus?scope=new')} accessibilityLabel="Review unseen saves in Focus Mode">
-            <View style={[styles.focusIcon, { backgroundColor: colors.accent }]}>
-              <Icon name="layers" size={22} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Review unseen saves in Focus Mode"
+            onPress={() => {
+              haptic.tap();
+              router.push('/focus?scope=new');
+            }}
+            style={({ pressed }) => [styles.waiting, pressed ? styles.pressed : brutal.shadowSmall]}
+          >
+            <View style={styles.waitingIcon}>
+              <Icon name="bell" size={20} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text weight="bold" size="md">
-                {stats.unseen} {stats.unseen === 1 ? 'save is' : 'saves are'} waiting
+              <Text weight="bold">
+                {stats.unseen} new {stats.unseen === 1 ? 'save' : 'saves'} waiting
               </Text>
-              <Text size="sm" color={colors.inkMuted}>
-                Review them one at a time in Focus Mode.
+              <Text size="xs" color={colors.inkMuted}>
+                Review now
               </Text>
             </View>
             <Icon name="chevron-right" />
-          </Card>
+          </Pressable>
         ) : null}
 
-        <SectionHeader
-          title="My collections"
-          right={
-            <Pressable onPress={() => setCreating(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Create collection">
-              <Text weight="bold" size="sm">
-                + New
-              </Text>
-            </Pressable>
-          }
-        />
+        <View style={styles.sectionRow}>
+          <Text weight="heavy" size="lg">
+            My Collections
+          </Text>
+          <Pressable onPress={pickSort} hitSlop={8} style={styles.sortButton} accessibilityRole="button" accessibilityLabel="Sort collections">
+            <Text size="xs" weight="semibold" color={colors.inkMuted}>
+              {SORT_LABELS[sort]}
+            </Text>
+            <Icon name="chevron-down" size={14} color={colors.inkMuted} />
+          </Pressable>
+        </View>
+
         {collections && collections.length > 0 ? (
-          <View style={[styles.grid, { gap }]}>
+          <View style={[styles.grid, { columnGap: gap, rowGap: gap + 4 }]}>
             {collections.map((c) => (
-              <CollectionCard key={c.id} collection={c} width={itemWidth} onLongPress={() => collectionMenu(db, c, () => setEditing(c))} />
+              <CollectionCard
+                key={c.id}
+                collection={c}
+                width={itemWidth}
+                hasNew={c.unseen_count > 0}
+                onLongPress={() => collectionMenu(db, c, () => setEditing(c))}
+              />
             ))}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Create collection"
-              onPress={() => setCreating(true)}
-              style={[styles.newCollection, { width: itemWidth }]}
-            >
-              <Icon name="plus" size={26} />
-              <Text weight="bold">New collection</Text>
-            </Pressable>
           </View>
         ) : null}
 
-        <SectionHeader title="Recently saved" />
+        <View style={styles.sectionRow}>
+          <Text weight="heavy" size="lg">
+            Recently saved
+          </Text>
+          {recent && recent.length > 0 ? (
+            <Pressable onPress={() => router.push('/collection/all')} hitSlop={8} accessibilityRole="button">
+              <Text size="xs" weight="semibold" color={colors.inkMuted}>
+                See all
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
         {recent && recent.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap, paddingRight: spacing.md, paddingBottom: 6 }} style={styles.recent}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap, paddingRight: spacing.md, paddingBottom: 6 }}
+            style={styles.recent}
+          >
             {recent.map((s) => (
               <SaveCard key={s.id} save={s} width={itemWidth} onLongPress={() => saveMenu(db, s, () => setMoving(s))} />
             ))}
@@ -132,23 +220,21 @@ export default function HomeScreen() {
           <EmptyState
             emoji="📌"
             title="Nothing saved yet"
-            message="Share a link from any app to SaveMe, or tap the + button to paste one."
+            message="Share a link from any app to SaveMe, or paste one above."
             action={<Button title="How it works" variant="plain" onPress={() => router.push('/how-to')} />}
           />
         )}
       </ScrollView>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Save a link or image"
-        onPress={() => setAdding(true)}
-        style={({ pressed }) => [styles.fab, { bottom: insets.bottom + spacing.lg }, pressed ? { transform: [{ translateX: 2 }, { translateY: 2 }] } : brutal.shadow]}
-      >
-        <Icon name="plus" size={30} />
-      </Pressable>
-
       <AddSaveSheet visible={adding} onClose={() => setAdding(false)} />
-      <CollectionForm visible={creating || !!editing} editing={editing} onClose={() => { setCreating(false); setEditing(null); }} />
+      <CollectionForm
+        visible={creating || !!editing}
+        editing={editing}
+        onClose={() => {
+          setCreating(false);
+          setEditing(null);
+        }}
+      />
       <MoveSheet save={moving} onClose={() => setMoving(null)} />
     </View>
   );
@@ -156,44 +242,57 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  logo: { width: 40, height: 50 },
-  headerActions: { flexDirection: 'row', gap: spacing.sm },
-  stats: { flexDirection: 'row', gap: spacing.sm },
-  stat: { flex: 1, padding: spacing.sm + 2, gap: 2 },
-  focusBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, marginTop: spacing.md },
-  focusIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  toolbarRight: { flexDirection: 'row', gap: spacing.sm },
+  logo: { width: 30, height: 38 },
+  headline: { marginTop: spacing.lg, marginBottom: spacing.md, lineHeight: 40, letterSpacing: -0.8 },
+  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
+  quickRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },
+  quickInput: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderWidth: brutal.border,
+    borderColor: colors.ink,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    minHeight: 48,
+  },
+  quickText: { flex: 1, fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.ink, paddingVertical: 10 },
+  quickButton: {
+    width: 48,
+    backgroundColor: colors.primary,
+    borderWidth: brutal.border,
+    borderColor: colors.ink,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waiting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+    padding: spacing.sm + 4,
+    backgroundColor: colors.card,
+    borderWidth: brutal.border,
+    borderColor: colors.ink,
+    borderRadius: radius.md,
+  },
+  waitingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: colors.accent,
     borderWidth: brutal.borderThin,
     borderColor: colors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg, marginBottom: spacing.sm },
+  sortButton: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  newCollection: {
-    minHeight: 120,
-    borderWidth: brutal.border,
-    borderStyle: 'dashed',
-    borderColor: colors.ink,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
   recent: { marginHorizontal: -spacing.md, paddingLeft: spacing.md, overflow: 'visible' },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

@@ -128,7 +128,7 @@ export default function ClaudeScreen() {
               value={enabled}
               disabled={busy || state === undefined}
               onValueChange={toggle}
-              trackColor={{ true: colors.accent, false: '#DDD' }}
+              trackColor={{ true: colors.ink, false: '#D6D6D6' }}
               thumbColor={colors.white}
             />
           </View>

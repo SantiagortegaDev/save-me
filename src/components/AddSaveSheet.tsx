@@ -114,14 +114,13 @@ function AddSaveForm({ onClose, defaultCollectionId }: Props) {
         />
         <Button icon="clipboard" variant="plain" accessibilityLabel="Paste" onPress={pasteLink} />
       </View>
-      <Label>Collection</Label>
       <CollectionPicker value={collectionId} onChange={setCollectionId} />
       <View style={styles.pinRow}>
         <Text weight="semibold">Pin this save</Text>
         <Switch
           value={pinned}
           onValueChange={setPinned}
-          trackColor={{ true: colors.accent, false: '#DDD' }}
+          trackColor={{ true: colors.ink, false: '#D6D6D6' }}
           thumbColor={colors.white}
         />
       </View>

@@ -1,7 +1,7 @@
 import { useSQLiteContext } from 'expo-sqlite';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { getSetting, setSetting } from '../db/repo';
+import { getSetting, setSetting, type CollectionSort } from '../db/repo';
 import { setHapticsEnabled } from './haptics';
 
 export type Settings = {
@@ -9,9 +9,10 @@ export type Settings = {
   reminders: boolean;
   reminderHour: number;
   onboarded: boolean;
+  collectionSort: CollectionSort;
 };
 
-const DEFAULTS: Settings = { haptics: true, reminders: false, reminderHour: 19, onboarded: false };
+const DEFAULTS: Settings = { haptics: true, reminders: false, reminderHour: 19, onboarded: false, collectionSort: 'oldest' };
 
 type Ctx = { settings: Settings; ready: boolean; update: (patch: Partial<Settings>) => Promise<void> };
 

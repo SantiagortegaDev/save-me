@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionPicker } from '../components/CollectionPicker';
-import { Button, Icon, Label, Text } from '../components/ui';
+import { Button, Icon, Text } from '../components/ui';
 import { INBOX_ID } from '../db/schema';
 import { haptic } from '../lib/haptics';
 import { saveImage, saveLink } from '../lib/saving';
@@ -128,11 +128,10 @@ export default function ShareScreen() {
               </View>
             ))}
             {items.length > 3 ? <Text size="sm">+{items.length - 3} more</Text> : null}
-            <Label>Collection</Label>
             <CollectionPicker value={collectionId} onChange={setCollectionId} />
             <View style={styles.pinRow}>
               <Text weight="semibold">Pin {items.length > 1 ? 'these' : 'this'}</Text>
-              <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: colors.accent, false: '#DDD' }} thumbColor={colors.white} />
+              <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: colors.ink, false: '#D6D6D6' }} thumbColor={colors.white} />
             </View>
             {error ? (
               <Text color={colors.danger} weight="semibold">

@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as WebBrowser from 'expo-web-browser';
@@ -12,7 +13,7 @@ import { getStats, wipeLibrary } from '../db/repo';
 import { deleteAllImages } from '../lib/images';
 import { cancelReminders, requestReminderPermission, scheduleDailyReminder, sendTestReminder } from '../lib/reminders';
 import { useSettings } from '../lib/settings';
-import { brutal, colors, spacing } from '../theme';
+import { colors, spacing } from '../theme';
 
 const REPO_URL = 'https://github.com/santiagortegadev/save-me';
 const REMINDER_HOURS = [8, 12, 19, 21];
@@ -74,14 +75,22 @@ export default function SettingsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
       <ScreenHeader title="Settings" />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
-        <Card color={colors.accent} style={styles.plan}>
-          <Text weight="bold" size="lg">
-            Everything unlocked 🎉
-          </Text>
-          <Text size="sm">
-            SaveMe is free and open source. Unlimited saves, images, collections, sub-collections, tags, Focus Mode, reminders,
-            import, export and Claude — no account, no ads, no tracking.
-          </Text>
+        <Card color={colors.primary} style={styles.plan}>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text size="xxs" weight="heavy" style={{ letterSpacing: 1 }}>
+              YOUR PLAN
+            </Text>
+            <Text weight="heavy" size="xl">
+              SaveMe Free
+            </Text>
+            <Text size="xs">Every feature unlocked. Open source, no account, no ads, no tracking.</Text>
+            <View style={styles.planBadge}>
+              <Text size="xxs" weight="heavy">
+                ∞ EVERYTHING INCLUDED
+              </Text>
+            </View>
+          </View>
+          <Image source={require('../../assets/logo.png')} style={styles.planLogo} contentFit="contain" />
         </Card>
 
         <Label style={styles.label}>Preferences</Label>
@@ -153,7 +162,18 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  plan: { padding: spacing.md, gap: spacing.xs, marginTop: spacing.xs, ...brutal.shadow },
+  plan: { padding: spacing.md, marginTop: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  planLogo: { width: 64, height: 80, transform: [{ rotate: '8deg' }] },
+  planBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 4,
+    backgroundColor: colors.white,
+  },
   label: { marginTop: spacing.lg, marginBottom: spacing.sm },
   footer: { textAlign: 'center', marginTop: spacing.xl },
 });
