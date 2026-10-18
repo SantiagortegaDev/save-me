@@ -60,6 +60,6 @@ MIT. SaveMe is an independent project; it uses no code or assets from any other 
 
 ## Download
 
-Every push to `main` builds an APK with GitHub Actions: open the latest run under **Actions → Build Android APK** and download the `SaveMe-apk` artifact. Pushing a tag like `v1.0.0` also attaches the APK to a GitHub release.
+Every push to `main` builds an APK with GitHub Actions: open the latest run under **Actions → Build Android APK** and download the `SaveMe-apk` artifact. To publish a release (release files never expire, unlike workflow artifacts which GitHub deletes after 90 days), run **Actions → Build Android APK → Run workflow** with a tag such as `v1.0.1`, or push that tag.
 
 These builds are signed with a debug key, so Android will ask you to allow installing from unknown sources. Use your own keystore before publishing to an app store.
