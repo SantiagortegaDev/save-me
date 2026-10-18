@@ -1,11 +1,11 @@
 import Constants from 'expo-constants';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Logo } from '../components/Logo';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SettingsGroup, SettingsRow } from '../components/SettingsRow';
 import { Card, Label, Text } from '../components/ui';
@@ -90,7 +90,9 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
-          <Image source={require('../../assets/logo.png')} style={styles.planLogo} contentFit="contain" />
+          <View style={styles.planLogo}>
+            <Logo size={76} />
+          </View>
         </Card>
 
         <Label style={styles.label}>Preferences</Label>
@@ -100,6 +102,29 @@ export default function SettingsScreen() {
             title="Haptic feedback"
             subtitle="Vibrate on taps and selections"
             toggle={{ value: settings.haptics, onChange: (v) => update({ haptics: v }) }}
+          />
+          <SettingsRow
+            icon="image"
+            iconColor={colors.accent}
+            title="Image previews"
+            subtitle={settings.imageFit === 'fit' ? 'Fit: cards take each image’s shape, nothing is cropped' : 'Fill: images cover the card, edges may be cropped'}
+            right={
+              <View style={styles.segment}>
+                {(['fill', 'fit'] as const).map((mode) => (
+                  <Pressable
+                    key={mode}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: settings.imageFit === mode }}
+                    onPress={() => update({ imageFit: mode })}
+                    style={[styles.segmentItem, settings.imageFit === mode && styles.segmentOn]}
+                  >
+                    <Text size="xs" weight="bold" color={settings.imageFit === mode ? colors.white : colors.ink}>
+                      {mode === 'fill' ? 'Fill' : 'Fit'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            }
           />
           <SettingsRow
             icon="bell"
@@ -163,7 +188,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center' },
   plan: { padding: spacing.md, marginTop: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  planLogo: { width: 64, height: 80, transform: [{ rotate: '8deg' }] },
+  planLogo: { transform: [{ rotate: '8deg' }] },
   planBadge: {
     alignSelf: 'flex-start',
     marginTop: 4,
@@ -176,4 +201,7 @@ const styles = StyleSheet.create({
   },
   label: { marginTop: spacing.lg, marginBottom: spacing.sm },
   footer: { textAlign: 'center', marginTop: spacing.xl },
+  segment: { flexDirection: 'row', borderWidth: 2, borderColor: colors.ink, borderRadius: 8, overflow: 'hidden' },
+  segmentItem: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.white },
+  segmentOn: { backgroundColor: colors.ink },
 });

@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { getStats } from '../db/repo';
 import { resumeMcpSync, stopMcpSync } from '../lib/mcpSync';
+import { maintainThumbnails } from '../lib/thumbnails';
 import { DATABASE_NAME, migrate } from '../db/schema';
 import { scheduleDailyReminder } from '../lib/reminders';
 import { SettingsProvider, useSettings } from '../lib/settings';
@@ -34,6 +35,10 @@ function AppShell() {
   useEffect(() => {
     void resumeMcpSync(db);
     return stopMcpSync;
+  }, [db]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') void maintainThumbnails(db);
   }, [db]);
 
   // Keep the daily reminder's text in sync with the current backlog.

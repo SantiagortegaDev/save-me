@@ -1,0 +1,17 @@
+import Svg, { Path, Rect } from 'react-native-svg';
+
+// Same drawing as assets/brand/logo.svg (the source of the app icons).
+const FRONT = 'M154.9 103.9 L336.1 88.1 Q360.0 86.0 360.5 110.0 L365.5 368.0 Q366.0 392.0 344.4 381.5 L268.6 344.5 Q247.0 334.0 225.9 345.4 L150.1 386.6 Q129.0 398.0 129.2 374.0 L130.8 130.0 Q131.0 106.0 154.9 103.9 Z';
+const BACK = 'M175.9 124.9 L357.1 109.1 Q381.0 107.0 381.5 131.0 L386.5 389.0 Q387.0 413.0 365.4 402.5 L289.6 365.5 Q268.0 355.0 246.9 366.4 L171.1 407.6 Q150.0 419.0 150.2 395.0 L151.8 151.0 Q152.0 127.0 175.9 124.9 Z';
+
+export function Logo({ size = 40 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="112 76 284 356" accessibilityLabel="SaveMe">
+      <Path d={BACK} fill="#86BEF4" stroke="#111111" strokeWidth={11} strokeLinejoin="round" />
+      <Path d={FRONT} fill="#FCCF44" stroke="#111111" strokeWidth={11} strokeLinejoin="round" />
+      <Rect x={199} y={203} width={21} height={42} rx={10.5} fill="#111111" />
+      <Rect x={273} y={198} width={21} height={42} rx={10.5} fill="#111111" transform="rotate(-3 283 219)" />
+      <Path d="M218 263 Q246 292 276 259" fill="none" stroke="#111111" strokeWidth={11} strokeLinecap="round" />
+    </Svg>
+  );
+}

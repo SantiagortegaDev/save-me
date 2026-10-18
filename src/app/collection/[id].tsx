@@ -10,7 +10,7 @@ import { CollectionCard } from '../../components/CollectionCard';
 import { CollectionForm } from '../../components/CollectionForm';
 import { useGrid } from '../../components/grid';
 import { MoveSheet } from '../../components/MoveSheet';
-import { SaveCard } from '../../components/SaveCard';
+import { SaveGrid } from '../../components/SaveGrid';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Button, Chip, EmptyState, Icon, IconButton, SectionHeader, Text } from '../../components/ui';
 import {
@@ -44,7 +44,7 @@ export default function CollectionScreen() {
   const [editing, setEditing] = useState<Collection | null>(null);
   const [creatingSub, setCreatingSub] = useState(false);
   const [moving, setMoving] = useState<Save | null>(null);
-  const { itemWidth, gap } = useGrid(150);
+  const { columns, itemWidth, gap } = useGrid(150);
 
   const { data: collection, loading } = useQuery(
     () => (collectionId ? getCollection(db, collectionId) : Promise.resolve(null)),
@@ -64,7 +64,7 @@ export default function CollectionScreen() {
     return (
       <View style={{ flex: 1 }}>
         <ScreenHeader title="Not found" />
-        <EmptyState emoji="🫥" title="Collection not found" message="It may have been deleted." />
+        <EmptyState art="missing" title="Collection not found" message="It may have been deleted." />
       </View>
     );
   }
@@ -152,14 +152,12 @@ export default function CollectionScreen() {
         </ScrollView>
 
         {saves && saves.length > 0 ? (
-          <View style={[styles.grid, { gap, marginTop: spacing.md }]}>
-            {saves.map((s) => (
-              <SaveCard key={s.id} save={s} width={itemWidth} onLongPress={() => saveMenu(db, s, () => setMoving(s))} />
-            ))}
+          <View style={{ marginTop: spacing.md }}>
+            <SaveGrid saves={saves} columns={columns} itemWidth={itemWidth} gap={gap} onLongPress={(s) => saveMenu(db, s, () => setMoving(s))} />
           </View>
         ) : (
           <EmptyState
-            emoji={filter === 'images' ? '🖼️' : filter === 'pinned' ? '📍' : '🔗'}
+            art={filter === 'images' ? 'image' : filter === 'pinned' ? 'pin' : 'link'}
             title={filter === 'all' ? 'No saves yet' : 'Nothing here'}
             message={filter === 'all' ? 'Share something to SaveMe or tap + to add it here.' : 'Try another filter.'}
           />

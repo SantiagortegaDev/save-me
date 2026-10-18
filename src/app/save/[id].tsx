@@ -3,11 +3,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { confirmDeleteSave } from '../../components/actions';
+import { Favicon } from '../../components/Favicon';
 import { MoveSheet } from '../../components/MoveSheet';
+import { mediaSource, SaveMedia } from '../../components/SaveMedia';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { Sheet } from '../../components/Sheet';
 import { Button, Chip, EmptyState, Icon, IconButton, Input, Label, Text, type IconName } from '../../components/ui';
@@ -24,7 +26,6 @@ import {
   type Save,
 } from '../../db/repo';
 import { haptic } from '../../lib/haptics';
-import { imageUri } from '../../lib/images';
 import { refreshMetadata } from '../../lib/saving';
 import { hostname } from '../../lib/url';
 import { useQuery } from '../../lib/useQuery';
@@ -91,7 +92,7 @@ export default function SaveDetailScreen() {
     return (
       <View style={{ flex: 1 }}>
         <ScreenHeader title="Save" />
-        <EmptyState emoji="🫥" title="Save not found" message="It may have been deleted." />
+        <EmptyState art="missing" title="Save not found" message="It may have been deleted." />
       </View>
     );
   }
@@ -117,7 +118,9 @@ function SaveDetail({ save }: { save: Save }) {
     if (!save.seen) void markSeen(db, save.id);
   }, [db, save.id, save.seen]);
 
-  const preview = save.kind === 'image' ? imageUri(save.image_path) : save.thumbnail;
+  const preview = mediaSource(save);
+  const { width: screenWidth } = useWindowDimensions();
+  const heroRatio = screenWidth / 300;
 
   async function open() {
     if (save.kind !== 'link') return;
@@ -160,16 +163,10 @@ function SaveDetail({ save }: { save: Save }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }} keyboardShouldPersistTaps="handled">
-        <View style={styles.hero}>
-          {preview ? (
-            <Pressable onPress={() => (save.kind === 'image' ? setZoom(true) : open())} accessibilityLabel="Open" style={StyleSheet.absoluteFill}>
-              <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
-            </Pressable>
-          ) : (
-            <View style={[StyleSheet.absoluteFill, styles.placeholder]}>
-              <Icon name={save.kind === 'image' ? 'image' : 'link'} size={48} />
-            </View>
-          )}
+        <Pressable onPress={() => (save.kind === 'image' ? setZoom(true) : open())} accessibilityLabel="Open" disabled={!preview}>
+          <SaveMedia save={save} fillRatio={heroRatio} minRatio={0.75} style={styles.hero} />
+        </Pressable>
+        <View style={styles.heroOverlay}>
           <View style={[styles.heroBar, { top: insets.top + spacing.sm }]}>
             <IconButton icon="arrow-left" accessibilityLabel="Back" size={38} onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
             <IconButton
@@ -184,13 +181,7 @@ function SaveDetail({ save }: { save: Save }) {
 
         <View style={[styles.sheet, brutal.shadow]}>
           <View style={styles.source}>
-            <View style={styles.sourceIcon}>
-              {save.kind === 'link' && save.favicon ? (
-                <Image source={{ uri: save.favicon }} style={{ width: 14, height: 14 }} />
-              ) : (
-                <Icon name={save.kind === 'image' ? 'image' : 'globe'} size={12} />
-              )}
-            </View>
+            <Favicon uri={save.kind === 'link' ? save.favicon : null} size={20} fallback={save.kind === 'image' ? 'image' : 'globe'} />
             <Text size="xs" weight="bold" numberOfLines={1} style={{ flex: 1 }}>
               {save.kind === 'link' ? save.site_name || hostname(save.url) : 'Image'}
             </Text>
@@ -315,7 +306,8 @@ function SaveDetail({ save }: { save: Save }) {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 300, backgroundColor: '#F1EADB', borderBottomWidth: brutal.border, borderColor: colors.ink },
+  hero: { borderBottomWidth: brutal.border, borderColor: colors.ink },
+  heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
   heroBar: { position: 'absolute', left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' },
   placeholder: { alignItems: 'center', justifyContent: 'center' },
   sheet: {
@@ -332,17 +324,6 @@ const styles = StyleSheet.create({
     width: '92%',
   },
   source: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sourceIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: colors.white,
-  },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   collectionChip: {

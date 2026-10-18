@@ -6,17 +6,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "saveme",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.santiagortega.saveme"
+      "bundleIdentifier": "dev.santiagortega.saveme",
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png",
+        "tinted": "./assets/icon-tinted.png"
+      }
     },
     "android": {
       "package": "dev.santiagortega.saveme",
       "adaptiveIcon": {
-        "backgroundColor": "#FFF8EC",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -46,10 +50,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFF8EC",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 140,
-          "resizeMode": "contain"
+          "imageWidth": 150,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#161616",
+            "image": "./assets/splash-icon.png"
+          }
         }
       ],
       [
@@ -88,6 +96,12 @@
               "image/*"
             ]
           }
+        }
+      ],
+      [
+        "./plugins/with-night-icon-background",
+        {
+          "color": "#161616"
         }
       ]
     ],

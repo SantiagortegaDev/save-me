@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionCard } from '../components/CollectionCard';
 import { useGrid } from '../components/grid';
-import { SaveCard } from '../components/SaveCard';
+import { SaveGrid } from '../components/SaveGrid';
 import { TagChip } from '../components/TagChip';
 import { Chip, EmptyState, Icon, SectionHeader, Text, type IconName } from '../components/ui';
 import { deleteTag, getStats, listSaves, listTags, search, type TagWithCount } from '../db/repo';
@@ -33,7 +33,7 @@ export default function SearchScreen() {
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ tab?: string }>();
-  const { itemWidth, gap } = useGrid(150);
+  const { columns, itemWidth, gap } = useGrid(150);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [tag, setTag] = useState<TagWithCount | null>(null);
@@ -101,7 +101,7 @@ export default function SearchScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]} keyboardShouldPersistTaps="handled">
         {results ? (
           results.collections.length + results.saves.length + results.tags.length === 0 ? (
-            <EmptyState emoji="🔍" title="No results found" message={`Nothing matches "${debounced}".`} />
+            <EmptyState art="search" title="No results found" message={`Nothing matches "${debounced}".`} />
           ) : (
             <>
               {results.tags.length > 0 ? (
@@ -136,11 +136,7 @@ export default function SearchScreen() {
               {results.saves.length > 0 ? (
                 <>
                   <SectionHeader title={`Saves · ${results.saves.length}`} />
-                  <View style={[styles.grid, { gap }]}>
-                    {results.saves.map((s) => (
-                      <SaveCard key={s.id} save={s} width={itemWidth} />
-                    ))}
-                  </View>
+                  <SaveGrid saves={results.saves} columns={columns} itemWidth={itemWidth} gap={gap} />
                 </>
               ) : null}
             </>
@@ -153,11 +149,7 @@ export default function SearchScreen() {
                 All tags
               </Text>
             </View>
-            <View style={[styles.grid, { gap }]}>
-              {(tagSaves ?? []).map((s) => (
-                <SaveCard key={s.id} save={s} width={itemWidth} />
-              ))}
-            </View>
+            <SaveGrid saves={tagSaves ?? []} columns={columns} itemWidth={itemWidth} gap={gap} />
           </>
         ) : (
           <>

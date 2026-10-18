@@ -3,37 +3,38 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Illustration, type IllustrationName } from '../components/Illustrations';
 import { Button, Text } from '../components/ui';
 import { useSettings } from '../lib/settings';
 import { brutal, colors, spacing } from '../theme';
 
 const STEPS = [
   {
-    emoji: '🌀',
+    art: 'scattered' as IllustrationName,
     color: colors.peach,
     title: 'Saved everywhere,\nfound nowhere.',
     body: 'Reels, articles, recipes and threads end up scattered across a dozen apps and forgotten.',
   },
   {
-    emoji: '📥',
+    art: 'share' as IllustrationName,
     color: colors.primary,
     title: 'Share it.\nSaveMe keeps it.',
     body: 'Tap Share in any app, pick SaveMe, choose a collection. Title, preview and source are filled in for you.',
   },
   {
-    emoji: '🗂️',
+    art: 'organized' as IllustrationName,
     color: colors.accent,
     title: 'Everything,\norganized.',
     body: 'Collections, sub-collections, tags, pins and notes. Search finds anything in a second.',
   },
   {
-    emoji: '🃏',
+    art: 'focus' as IllustrationName,
     color: colors.lilac,
     title: 'Actually use\nwhat you save.',
     body: 'Focus Mode serves your saves one card at a time, and a gentle daily reminder brings you back.',
   },
   {
-    emoji: '🔓',
+    art: 'free' as IllustrationName,
     color: colors.info,
     title: 'Free. Open.\nYours.',
     body: 'Every feature is free, forever. No account, no ads, no tracking. Your library stays on your device.',
@@ -69,7 +70,7 @@ export default function OnboardingScreen() {
 
       <View style={styles.center}>
         <View style={[styles.art, brutal.shadow, { backgroundColor: current.color }]}>
-          <Text style={{ fontSize: 88, lineHeight: 104 }}>{current.emoji}</Text>
+          <Illustration name={current.art} size={176} />
         </View>
         <Text weight="bold" size="xxl" style={styles.title}>
           {current.title}

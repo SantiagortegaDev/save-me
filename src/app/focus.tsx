@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
@@ -7,10 +6,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Animated, PanResponder, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Illustration } from '../components/Illustrations';
+import { Favicon } from '../components/Favicon';
+import { SaveMedia } from '../components/SaveMedia';
 import { Button, Icon, Text } from '../components/ui';
 import { listAllCollections, listFocusSaves, listTagsForSave, markSeen, setSavePinned, type Save } from '../db/repo';
 import { haptic } from '../lib/haptics';
-import { imageUri } from '../lib/images';
 import { hostname } from '../lib/url';
 import { useQuery } from '../lib/useQuery';
 import { brutal, colors, radius, spacing } from '../theme';
@@ -34,27 +35,17 @@ function pad(n: number) {
 function FocusCard({ save, width, collection }: { save: Save; width: number; collection?: { name: string; color: string } }) {
   const db = useSQLiteContext();
   const { data: tags } = useQuery(() => listTagsForSave(db, save.id), [db, save.id]);
-  const preview = save.kind === 'image' ? imageUri(save.image_path) : save.thumbnail;
   return (
     <View style={[styles.card, { width }]}>
       {save.kind === 'link' ? (
         <View style={styles.source}>
-          <View style={styles.sourceIcon}>
-            {save.favicon ? <Image source={{ uri: save.favicon }} style={{ width: 14, height: 14 }} /> : <Icon name="globe" size={12} />}
-          </View>
+          <Favicon uri={save.favicon} size={20} />
           <Text size="xs" weight="bold" numberOfLines={1} style={{ flex: 1 }}>
             {save.site_name || hostname(save.url)}
           </Text>
         </View>
       ) : null}
-      <View style={styles.cardImage}>
-        {preview ? (
-          <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        ) : (
-          <View style={styles.cardPlaceholder}>
-            <Icon name={save.kind === 'image' ? 'image' : 'link'} size={44} />
-          </View>
-        )}
+      <SaveMedia save={save} fillRatio={1.15} minRatio={0.8} style={styles.cardImage}>
         {collection ? (
           <View style={styles.collectionChip}>
             <View style={[styles.dot, { backgroundColor: collection.color }]} />
@@ -63,7 +54,7 @@ function FocusCard({ save, width, collection }: { save: Save; width: number; col
             </Text>
           </View>
         ) : null}
-      </View>
+      </SaveMedia>
       <View style={styles.cardBody}>
         <Text weight="heavy" size="lg" numberOfLines={3} style={{ lineHeight: 23 }}>
           {save.title || save.url}
@@ -211,7 +202,7 @@ export default function FocusScreen() {
           </View>
         ) : total === 0 ? (
           <View style={styles.message}>
-            <Text style={{ fontSize: 48 }}>🎉</Text>
+            <Illustration name="celebrate" size={120} />
             <Text weight="heavy" size="xl" color={colors.white}>
               {scope === 'new' ? 'All caught up!' : 'Nothing to review'}
             </Text>
@@ -222,7 +213,7 @@ export default function FocusScreen() {
           </View>
         ) : done ? (
           <View style={styles.message}>
-            <Text style={{ fontSize: 48 }}>🏁</Text>
+            <Illustration name="finish" size={120} />
             <Text weight="heavy" size="xl" color={colors.white}>
               Great job.
             </Text>
@@ -310,19 +301,8 @@ const styles = StyleSheet.create({
     boxShadow: '0px 6px 0px #000000',
   },
   source: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: 10 },
-  sourceIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: colors.white,
-  },
   cardImage: {
-    aspectRatio: 1.15,
+    width: 'auto',
     marginHorizontal: spacing.sm,
     borderRadius: radius.md,
     borderWidth: brutal.borderThin,

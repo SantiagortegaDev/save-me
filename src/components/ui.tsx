@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { haptic } from '../lib/haptics';
+import { Illustration, type IllustrationName } from './Illustrations';
 import { brutal, colors, fontSize, fonts, radius, spacing } from '../theme';
 
 export type IconName = ComponentProps<typeof Feather>['name'];
@@ -219,21 +220,19 @@ export function Input(props: TextInputProps & { multiline?: boolean }) {
 }
 
 export function EmptyState({
-  emoji,
+  art,
   title,
   message,
   action,
 }: {
-  emoji: string;
+  art: IllustrationName;
   title: string;
   message?: string;
   action?: ReactNode;
 }) {
   return (
     <View style={styles.empty}>
-      <View style={[styles.emptyBadge, brutal.shadow]}>
-        <RNText style={{ fontSize: 36 }}>{emoji}</RNText>
-      </View>
+      <Illustration name={art} size={110} />
       <Text weight="bold" size="lg" style={{ textAlign: 'center' }}>
         {title}
       </Text>

@@ -1,7 +1,8 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { createSave, findSaveByUrl, setSavePinned, updateSave } from '../db/repo';
-import { storeImage } from './images';
+import { imageUri, storeImage } from './images';
+import { cacheThumbnail, imageSize } from './thumbnails';
 import { fallbackMetadata, fetchMetadata } from './metadata';
 import { hostname, normalizeUrl } from './url';
 
@@ -51,7 +52,9 @@ export async function refreshMetadata(
       thumbnail: meta.thumbnail,
       favicon: meta.favicon,
       site_name: meta.siteName,
+      thumbnail_local: null,
     });
+    if (meta.thumbnail) await cacheThumbnail(db, id, meta.thumbnail);
   } catch (error) {
     console.warn('[saving] metadata refresh failed', error);
   }
@@ -63,7 +66,10 @@ export async function saveImage(
   opts: { mimeType?: string | null; title?: string; collectionId?: string; pinned?: boolean } = {},
 ): Promise<SaveResult> {
   const name = await storeImage(sourceUri, opts.mimeType);
+  const size = await imageSize(imageUri(name) ?? sourceUri);
   const id = await createSave(db, {
+    mediaWidth: size?.width,
+    mediaHeight: size?.height,
     kind: 'image',
     imagePath: name,
     title: opts.title?.trim() || 'Image',

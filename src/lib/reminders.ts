@@ -45,7 +45,7 @@ export async function scheduleDailyReminder(unseen: number, hour = DEFAULT_REMIN
   await Notifications.scheduleNotificationAsync({
     identifier: REMINDER_ID,
     content: {
-      title: 'Your saves are waiting 📌',
+      title: 'Your saves are waiting',
       body:
         unseen === 1
           ? 'You have 1 save you have not opened yet. Take a minute in Focus Mode?'

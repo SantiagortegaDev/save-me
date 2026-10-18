@@ -30,6 +30,9 @@ export type Save = {
   title: string;
   description: string | null;
   thumbnail: string | null;
+  thumbnail_local: string | null;
+  media_width: number | null;
+  media_height: number | null;
   favicon: string | null;
   site_name: string | null;
   note: string | null;
@@ -249,6 +252,8 @@ export type NewSave = {
   pinned?: boolean;
   seen?: boolean;
   createdAt?: number;
+  mediaWidth?: number | null;
+  mediaHeight?: number | null;
 };
 
 export async function createSave(db: SQLiteDatabase, input: NewSave, opts: { silent?: boolean } = {}): Promise<string> {
@@ -256,8 +261,8 @@ export async function createSave(db: SQLiteDatabase, input: NewSave, opts: { sil
   const now = input.createdAt ?? Date.now();
   await db.runAsync(
     `INSERT INTO saves (id, kind, url, image_path, title, description, thumbnail, favicon, site_name, note,
-                        collection_id, pinned, seen, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        collection_id, pinned, seen, created_at, updated_at, media_width, media_height)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     input.kind,
     input.url ?? '',
@@ -273,6 +278,8 @@ export async function createSave(db: SQLiteDatabase, input: NewSave, opts: { sil
     input.seen ? 1 : 0,
     now,
     now,
+    input.mediaWidth ?? null,
+    input.mediaHeight ?? null,
   );
   if (!opts.silent) notifyChange();
   return id;
@@ -281,7 +288,9 @@ export async function createSave(db: SQLiteDatabase, input: NewSave, opts: { sil
 export async function updateSave(
   db: SQLiteDatabase,
   id: string,
-  patch: Partial<Pick<Save, 'title' | 'description' | 'thumbnail' | 'favicon' | 'site_name' | 'note' | 'url'>>,
+  patch: Partial<
+    Pick<Save, 'title' | 'description' | 'thumbnail' | 'thumbnail_local' | 'media_width' | 'media_height' | 'favicon' | 'site_name' | 'note' | 'url'>
+  >,
 ): Promise<void> {
   const keys = Object.keys(patch) as (keyof typeof patch)[];
   if (keys.length === 0) return;

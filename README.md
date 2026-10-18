@@ -7,7 +7,8 @@ Every feature is free. No account, no ads, no tracking, no paywall.
 ## Features
 
 - **Save from any app** with the Android share sheet / iOS share extension, or paste a link (the clipboard is read automatically).
-- **Rich previews** fetched on the device (Open Graph / Twitter cards, plus oEmbed for YouTube, TikTok, Vimeo and Spotify). No backend server.
+- **Rich previews** fetched on the device: title, image and platform (Instagram, TikTok, YouTube, X, Reddit, Pinterest, Threads, Facebook, Spotify…). Uses oEmbed, Open Graph, JSON-LD and crawler-style requests; no backend server. Preview images are stored compressed on the phone so cards load instantly and offline.
+- **Fill or Fit**: choose whether previews fill a fixed card or each card takes its image's shape, so tall screenshots and reels show complete in a masonry grid.
 - **Images**: save screenshots and photos from the gallery or the share sheet.
 - **Unlimited collections and sub-collections**, each with its own color and icon. Pin collections and saves to the top.
 - **Tags, notes and search** across titles, URLs, descriptions, notes and tags.
@@ -26,11 +27,13 @@ Expo SDK 58 · React Native 0.88 · Expo Router · expo-sqlite · TypeScript.
 src/app/         screens (Expo Router)
 src/components/  neo-brutalist UI kit, sheets, cards
 src/db/          SQLite schema + queries
-src/lib/         metadata, import/export parsers, backup, reminders, settings, MCP sync
+src/lib/         metadata, platforms, thumbnails, import/export parsers, backup, reminders, settings, MCP sync
 src/shared/      wire format shared with the MCP server
 mcp-server/      Cloudflare Worker that serves the Claude connector
 tests/           unit tests for the pure modules
 ```
+
+Icons are generated from `assets/brand/logo.svg` with `node scripts/make-icons.mjs` (light, dark and tinted iOS icons, Android adaptive icon with a dark-mode background, monochrome, splash and notification icons).
 
 ## Develop
 
@@ -50,7 +53,7 @@ npx eas-cli@latest build -p android --profile preview
 
 ## Privacy
 
-Your library lives in a local SQLite database on your device. By default the only network requests SaveMe makes are fetching previews for the links you save, straight from those sites.
+Your library lives in a local SQLite database on your device. By default the only network requests SaveMe makes are fetching previews for the links you save: straight from those sites, from their public oEmbed endpoints, from `api.fxtwitter.com` for X posts, and site icons from DuckDuckGo's icon service.
 
 If you turn on **Claude (MCP)**, a text copy of your library (links, titles, notes, tags and collections, never image files) is kept on `mcp-saveme.santiagortega.dev` so Claude can reach it with your private link. Turning it off deletes that copy.
 

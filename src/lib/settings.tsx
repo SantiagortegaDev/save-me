@@ -10,9 +10,11 @@ export type Settings = {
   reminderHour: number;
   onboarded: boolean;
   collectionSort: CollectionSort;
+  // 'fill' crops previews to a fixed shape; 'fit' shapes each card like its image.
+  imageFit: 'fill' | 'fit';
 };
 
-const DEFAULTS: Settings = { haptics: true, reminders: false, reminderHour: 19, onboarded: false, collectionSort: 'oldest' };
+const DEFAULTS: Settings = { haptics: true, reminders: false, reminderHour: 19, onboarded: false, collectionSort: 'oldest', imageFit: 'fill' };
 
 type Ctx = { settings: Settings; ready: boolean; update: (patch: Partial<Settings>) => Promise<void> };
 

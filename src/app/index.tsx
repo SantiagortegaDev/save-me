@@ -1,5 +1,4 @@
 import * as Clipboard from 'expo-clipboard';
-import { Image } from 'expo-image';
 import { Redirect, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
@@ -11,6 +10,7 @@ import { collectionMenu, saveMenu } from '../components/actions';
 import { CollectionCard } from '../components/CollectionCard';
 import { CollectionForm } from '../components/CollectionForm';
 import { useGrid } from '../components/grid';
+import { Logo } from '../components/Logo';
 import { MoveSheet } from '../components/MoveSheet';
 import { SaveCard } from '../components/SaveCard';
 import { Button, EmptyState, Icon, IconButton, Text } from '../components/ui';
@@ -114,7 +114,7 @@ export default function HomeScreen() {
   function pickSort() {
     Alert.alert('Sort collections', undefined, [
       ...(Object.keys(SORT_LABELS) as CollectionSort[]).map((key) => ({
-        text: `${key === sort ? '✓ ' : ''}${SORT_LABELS[key]}`,
+        text: key === sort ? `${SORT_LABELS[key]} (current)` : SORT_LABELS[key],
         onPress: () => update({ collectionSort: key }),
       })),
       { text: 'Cancel', style: 'cancel' as const },
@@ -129,7 +129,7 @@ export default function HomeScreen() {
       >
         <View style={styles.toolbar}>
           <IconButton icon="settings" accessibilityLabel="Settings" size={38} onPress={() => router.push('/settings')} />
-          <Image source={require('../../assets/logo.png')} style={styles.logo} contentFit="contain" accessibilityLabel="SaveMe" />
+          <Logo size={40} />
           <View style={styles.toolbarRight}>
             <IconButton icon="folder-plus" accessibilityLabel="Create collection" size={38} onPress={() => setCreating(true)} />
             <IconButton icon="search" accessibilityLabel="Search" size={38} onPress={() => router.push('/search')} />
@@ -209,7 +209,7 @@ export default function HomeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap, paddingRight: spacing.md, paddingBottom: 6 }}
+            contentContainerStyle={{ gap, paddingRight: spacing.md, paddingBottom: 6, alignItems: 'flex-start' }}
             style={styles.recent}
           >
             {recent.map((s) => (
@@ -218,7 +218,7 @@ export default function HomeScreen() {
           </ScrollView>
         ) : (
           <EmptyState
-            emoji="📌"
+            art="saves"
             title="Nothing saved yet"
             message="Share a link from any app to SaveMe, or paste one above."
             action={<Button title="How it works" variant="plain" onPress={() => router.push('/how-to')} />}
@@ -244,7 +244,6 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
   toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toolbarRight: { flexDirection: 'row', gap: spacing.sm },
-  logo: { width: 30, height: 38 },
   headline: { marginTop: spacing.lg, marginBottom: spacing.md, lineHeight: 40, letterSpacing: -0.8 },
   pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
   quickRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },

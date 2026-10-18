@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 export const DATABASE_NAME = 'saveme.db';
 export const INBOX_ID = 'inbox';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const SCHEMA_V1 = `
   CREATE TABLE IF NOT EXISTS collections (
@@ -74,6 +74,15 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
       now,
       now,
     );
+  }
+
+  if (current < 2) {
+    // Compressed local copy of the preview image and the media's natural size (for "fit" cards).
+    await db.execAsync(`
+      ALTER TABLE saves ADD COLUMN thumbnail_local TEXT;
+      ALTER TABLE saves ADD COLUMN media_width INTEGER;
+      ALTER TABLE saves ADD COLUMN media_height INTEGER;
+    `);
   }
 
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
