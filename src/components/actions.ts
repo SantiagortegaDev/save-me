@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { Alert, Share } from 'react-native';
+import { Share } from 'react-native';
 
 import {
   deleteCollection,
   deleteSave,
+  deleteSaves,
   listSaves,
   setCollectionPinned,
   setSavePinned,
@@ -13,6 +14,7 @@ import {
 } from '../db/repo';
 import { haptic } from '../lib/haptics';
 import { deleteImages } from '../lib/images';
+import { Alert } from '../lib/dialog';
 
 export function confirmDeleteCollection(db: SQLiteDatabase, c: Collection, onDone?: () => void) {
   Alert.alert('Delete collection?', `"${c.name}", its sub-collections and all their saves will be deleted. This cannot be undone.`, [
@@ -46,6 +48,21 @@ export function confirmDeleteSave(db: SQLiteDatabase, s: Save, onDone?: () => vo
   ]);
 }
 
+export function confirmDeleteSaves(db: SQLiteDatabase, ids: string[], onDone?: () => void) {
+  Alert.alert(`Delete ${ids.length} ${ids.length === 1 ? 'save' : 'saves'}?`, 'They will be permanently deleted. This cannot be undone.', [
+    { text: 'Cancel', style: 'cancel' },
+    {
+      text: 'Delete',
+      style: 'destructive',
+      onPress: async () => {
+        deleteImages(await deleteSaves(db, ids));
+        haptic.warning();
+        onDone?.();
+      },
+    },
+  ]);
+}
+
 export async function shareCollection(db: SQLiteDatabase, c: Collection) {
   const saves = await listSaves(db, { collectionId: c.id, filter: 'links' });
   if (saves.length === 0) {
@@ -67,9 +84,10 @@ export function collectionMenu(db: SQLiteDatabase, c: Collection, onEdit: () => 
   Alert.alert(c.name, undefined, options);
 }
 
-export function saveMenu(db: SQLiteDatabase, s: Save, onMove: () => void) {
+export function saveMenu(db: SQLiteDatabase, s: Save, onMove: () => void, onSelect?: () => void) {
   Alert.alert(s.title || 'Save', undefined, [
     { text: 'Open details', onPress: () => router.push(`/save/${s.id}`) },
+    ...(onSelect ? [{ text: 'Select multiple', onPress: onSelect }] : []),
     { text: s.pinned ? 'Unpin' : 'Pin', onPress: () => setSavePinned(db, s.id, !s.pinned) },
     { text: 'Move…', onPress: onMove },
     ...(s.kind === 'link' ? [{ text: 'Share', onPress: () => Share.share({ message: s.url }) }] : []),

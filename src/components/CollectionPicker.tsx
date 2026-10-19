@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { listAllCollections } from '../db/repo';
 import { haptic } from '../lib/haptics';
 import { useQuery } from '../lib/useQuery';
-import { brutal, colors, radius, spacing } from '../theme';
+import { brutal, colors, radius, spacing, themed } from '../theme';
 import { CollectionForm } from './CollectionForm';
 import { Icon, Text, type IconName } from './ui';
 
@@ -72,40 +72,42 @@ export function CollectionPicker({
   );
 }
 
-const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  newButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: colors.card,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    borderRadius: radius.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: 10,
-    backgroundColor: colors.card,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  rowSelected: { backgroundColor: '#FFF1DE', borderWidth: brutal.border },
-  badge: {
-    width: 32,
-    height: 32,
-    borderRadius: 7,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.inkLight, alignItems: 'center', justifyContent: 'center' },
-  radioOn: { borderColor: colors.ink },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.ink },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    newButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      backgroundColor: colors.card,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      borderRadius: radius.sm,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: 10,
+      backgroundColor: colors.card,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    rowSelected: { backgroundColor: colors.selected, borderWidth: brutal.border },
+    badge: {
+      width: 32,
+      height: 32,
+      borderRadius: 7,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.inkLight, alignItems: 'center', justifyContent: 'center' },
+    radioOn: { borderColor: colors.ink },
+    radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.ink },
+  }),
+);

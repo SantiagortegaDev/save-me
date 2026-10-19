@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 export const DATABASE_NAME = 'saveme.db';
 export const INBOX_ID = 'inbox';
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const SCHEMA_V1 = `
   CREATE TABLE IF NOT EXISTS collections (
@@ -82,6 +82,14 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
       ALTER TABLE saves ADD COLUMN thumbnail_local TEXT;
       ALTER TABLE saves ADD COLUMN media_width INTEGER;
       ALTER TABLE saves ADD COLUMN media_height INTEGER;
+    `);
+  }
+
+  if (current < 3) {
+    // Readable article text for offline reading, and text recognized in saved images (searchable).
+    await db.execAsync(`
+      ALTER TABLE saves ADD COLUMN article_text TEXT;
+      ALTER TABLE saves ADD COLUMN ocr_text TEXT;
     `);
   }
 

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '../theme';
+import { colors, spacing, themed } from '../theme';
 import { IconButton, Text } from './ui';
 
 export function ScreenHeader({ title, right, back = true }: { title?: string; right?: ReactNode; back?: boolean }) {
@@ -27,15 +27,17 @@ export function ScreenHeader({ title, right, back = true }: { title?: string; ri
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-    backgroundColor: colors.paper,
-    gap: spacing.sm,
-  },
-  side: { minWidth: 40, flexDirection: 'row', gap: spacing.sm },
-  title: { flex: 1, textAlign: 'center' },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+      backgroundColor: colors.paper,
+      gap: spacing.sm,
+    },
+    side: { minWidth: 40, flexDirection: 'row', gap: spacing.sm },
+    title: { flex: 1, textAlign: 'center' },
+  }),
+);

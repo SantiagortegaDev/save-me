@@ -12,7 +12,8 @@ import { INBOX_ID } from '../db/schema';
 import { haptic } from '../lib/haptics';
 import { saveImage, saveLink } from '../lib/saving';
 import { extractUrl, hostname } from '../lib/url';
-import { brutal, colors, radius, spacing } from '../theme';
+import { brutal, colors, radius, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
 
 type Incoming = { kind: 'link'; url: string } | { kind: 'image'; uri: string; mimeType: string | null };
 
@@ -22,6 +23,7 @@ function close() {
 }
 
 export default function ShareScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const { sharedPayloads, resolvedSharedPayloads, isResolving, clearSharedPayloads } = useIncomingShare();
@@ -86,7 +88,7 @@ export default function ShareScreen() {
         {done ? (
           <View style={styles.done}>
             <View style={[styles.doneBadge, brutal.shadow]}>
-              <Icon name="check" size={36} />
+              <Icon name="check" size={36} color={colors.ink} />
             </View>
             <Text weight="bold" size="lg">
               Saved!
@@ -94,7 +96,7 @@ export default function ShareScreen() {
           </View>
         ) : waiting ? (
           <View style={styles.done}>
-            <ActivityIndicator color={colors.ink} />
+            <ActivityIndicator color={colors.text} />
           </View>
         ) : items.length === 0 ? (
           <View style={styles.done}>
@@ -112,7 +114,7 @@ export default function ShareScreen() {
                   <Image source={{ uri: item.uri }} style={styles.thumb} contentFit="cover" />
                 ) : (
                   <View style={[styles.thumb, styles.linkThumb]}>
-                    <Icon name="link" />
+                    <Icon name="link" color={colors.ink} />
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
@@ -131,7 +133,7 @@ export default function ShareScreen() {
             <CollectionPicker value={collectionId} onChange={setCollectionId} />
             <View style={styles.pinRow}>
               <Text weight="semibold">Pin {items.length > 1 ? 'these' : 'this'}</Text>
-              <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: colors.ink, false: '#D6D6D6' }} thumbColor={colors.white} />
+              <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: colors.ink, false: colors.track }} thumbColor={colors.white} />
             </View>
             {error ? (
               <Text color={colors.danger} weight="semibold">
@@ -146,41 +148,43 @@ export default function ShareScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay },
-  sheet: {
-    maxHeight: '85%',
-    backgroundColor: colors.paper,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    borderWidth: brutal.border,
-    borderBottomWidth: 0,
-    borderColor: colors.ink,
-    padding: spacing.md,
-  },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  preview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.sm,
-    backgroundColor: colors.white,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  thumb: { width: 52, height: 52, borderRadius: radius.sm, borderWidth: brutal.borderThin, borderColor: colors.ink },
-  linkThumb: { backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  pinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  done: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl },
-  doneBadge: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: colors.accent,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay },
+    sheet: {
+      maxHeight: '85%',
+      backgroundColor: colors.paper,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      borderWidth: brutal.border,
+      borderBottomWidth: 0,
+      borderColor: colors.ink,
+      padding: spacing.md,
+    },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+    preview: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.sm,
+      backgroundColor: colors.surface,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    thumb: { width: 52, height: 52, borderRadius: radius.sm, borderWidth: brutal.borderThin, borderColor: colors.ink },
+    linkThumb: { backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+    pinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    done: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl },
+    doneBadge: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
+      backgroundColor: colors.accent,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);

@@ -14,7 +14,8 @@ import { listAllCollections, listFocusSaves, listTagsForSave, markSeen, setSaveP
 import { haptic } from '../lib/haptics';
 import { hostname } from '../lib/url';
 import { useQuery } from '../lib/useQuery';
-import { brutal, colors, radius, spacing } from '../theme';
+import { brutal, colors, radius, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
 
 const SWIPE_THRESHOLD = 110;
 const MAX_SEGMENTS = 12;
@@ -81,6 +82,7 @@ function FocusCard({ save, width, collection }: { save: Save; width: number; col
 }
 
 export default function FocusScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -273,72 +275,74 @@ export default function FocusScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.night, paddingHorizontal: spacing.md },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  topActions: { flexDirection: 'row', gap: spacing.sm },
-  darkButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    borderWidth: brutal.borderThin,
-    borderColor: '#4A4A4A',
-    backgroundColor: '#1F1F1F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progress: { flexDirection: 'row', gap: 4, marginTop: spacing.md },
-  segment: { flex: 1, height: 4, borderRadius: 2 },
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  message: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
-  behind: { position: 'absolute', opacity: 0.55 },
-  card: {
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    boxShadow: '0px 6px 0px #000000',
-  },
-  source: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: 10 },
-  cardImage: {
-    width: 'auto',
-    marginHorizontal: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    overflow: 'hidden',
-    backgroundColor: '#F1EADB',
-  },
-  cardPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  collectionChip: {
-    position: 'absolute',
-    left: 8,
-    bottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    maxWidth: '70%',
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  dot: { width: 10, height: 10, borderRadius: 3, borderWidth: 1, borderColor: colors.ink },
-  cardBody: { padding: spacing.md, gap: spacing.sm },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tag: { backgroundColor: colors.mint, borderWidth: 1.5, borderColor: colors.ink, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
-  controls: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  navButton: {
-    width: 50,
-    height: 50,
-    borderRadius: radius.md,
-    borderWidth: brutal.border,
-    borderColor: '#4A4A4A',
-    backgroundColor: '#1F1F1F',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.night, paddingHorizontal: spacing.md },
+    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    topActions: { flexDirection: 'row', gap: spacing.sm },
+    darkButton: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.md,
+      borderWidth: brutal.borderThin,
+      borderColor: '#4A4A4A',
+      backgroundColor: '#1F1F1F',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    progress: { flexDirection: 'row', gap: 4, marginTop: spacing.md },
+    segment: { flex: 1, height: 4, borderRadius: 2 },
+    stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    message: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg },
+    behind: { position: 'absolute', opacity: 0.55 },
+    card: {
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      boxShadow: '0px 6px 0px #000000',
+    },
+    source: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.md, paddingVertical: 10 },
+    cardImage: {
+      width: 'auto',
+      marginHorizontal: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      overflow: 'hidden',
+      backgroundColor: colors.placeholder,
+    },
+    cardPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    collectionChip: {
+      position: 'absolute',
+      left: 8,
+      bottom: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      maxWidth: '70%',
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+    },
+    dot: { width: 10, height: 10, borderRadius: 3, borderWidth: 1, borderColor: colors.ink },
+    cardBody: { padding: spacing.md, gap: spacing.sm },
+    tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    tag: { backgroundColor: colors.mint, borderWidth: 1.5, borderColor: colors.ink, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
+    controls: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+    navButton: {
+      width: 50,
+      height: 50,
+      borderRadius: radius.md,
+      borderWidth: brutal.border,
+      borderColor: '#4A4A4A',
+      backgroundColor: '#1F1F1F',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);

@@ -3,6 +3,8 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { createSave, findSaveByUrl, setSavePinned, updateSave } from '../db/repo';
 import { imageUri, storeImage } from './images';
 import { cacheThumbnail, imageSize } from './thumbnails';
+import { recognizeImageText, saveArticleText } from './offline';
+import { currentSettings } from './settings';
 import { fallbackMetadata, fetchMetadata } from './metadata';
 import { hostname, normalizeUrl } from './url';
 
@@ -55,6 +57,7 @@ export async function refreshMetadata(
       thumbnail_local: null,
     });
     if (meta.thumbnail) await cacheThumbnail(db, id, meta.thumbnail);
+    if (currentSettings().offlineText) await saveArticleText(db, id, url);
   } catch (error) {
     console.warn('[saving] metadata refresh failed', error);
   }
@@ -76,5 +79,6 @@ export async function saveImage(
     collectionId: opts.collectionId,
     pinned: opts.pinned,
   });
+  void recognizeImageText(db, id, name);
   return { id, duplicate: false };
 }

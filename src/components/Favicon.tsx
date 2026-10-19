@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '../theme';
+import { colors, themed } from '../theme';
 import { Icon, type IconName } from './ui';
 
 // Site icon in a small bordered tile; falls back to a vector icon when the site has none.
@@ -19,14 +19,16 @@ export function Favicon({ uri, size = 18, fallback = 'globe' }: { uri?: string |
   );
 }
 
-const styles = StyleSheet.create({
-  tile: {
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.ink,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    tile: {
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: colors.ink,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+  }),
+);

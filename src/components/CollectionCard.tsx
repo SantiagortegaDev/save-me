@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { CollectionWithCount } from '../db/repo';
 import { haptic } from '../lib/haptics';
-import { brutal, colors, radius, spacing } from '../theme';
+import { brutal, colors, radius, spacing, themed } from '../theme';
 import { Icon, Text, type IconName } from './ui';
 
 const TAB_HEIGHT = 14;
@@ -52,7 +52,7 @@ export function CollectionCard({
               </View>
               {hasNew ? (
                 <View style={styles.newBadge}>
-                  <Text size="xxs" weight="heavy">
+                  <Text size="xxs" weight="heavy" color={colors.ink}>
                     NEW
                   </Text>
                 </View>
@@ -70,48 +70,50 @@ export function CollectionCard({
   );
 }
 
-const styles = StyleSheet.create({
-  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
-  tab: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '46%',
-    height: TAB_HEIGHT + 6,
-    borderWidth: brutal.border,
-    borderBottomWidth: 0,
-    borderColor: colors.ink,
-    borderTopLeftRadius: radius.md,
-    borderTopRightRadius: radius.md,
-  },
-  body: {
-    minHeight: 112,
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-    borderTopLeftRadius: 0,
-    padding: spacing.sm + 2,
-    justifyContent: 'space-between',
-  },
-  top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  badge: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  meta: { flex: 1, paddingTop: 1, gap: 1 },
-  newBadge: {
-    backgroundColor: colors.primary,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  name: { marginTop: spacing.md, lineHeight: 17 },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
+    tab: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '46%',
+      height: TAB_HEIGHT + 6,
+      borderWidth: brutal.border,
+      borderBottomWidth: 0,
+      borderColor: colors.ink,
+      borderTopLeftRadius: radius.md,
+      borderTopRightRadius: radius.md,
+    },
+    body: {
+      minHeight: 112,
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+      borderTopLeftRadius: 0,
+      padding: spacing.sm + 2,
+      justifyContent: 'space-between',
+    },
+    top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+    badge: {
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    meta: { flex: 1, paddingTop: 1, gap: 1 },
+    newBadge: {
+      backgroundColor: colors.primary,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      borderRadius: 4,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+    },
+    name: { marginTop: spacing.md, lineHeight: 17 },
+  }),
+);

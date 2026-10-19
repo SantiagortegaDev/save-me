@@ -3,7 +3,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '../components/ScreenHeader';
 import { Card, Label, Text } from '../components/ui';
-import { brutal, colors, spacing } from '../theme';
+import { brutal, colors, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
 
 const SHARE_STEPS = [
   'Open a post, video or page in Chrome, Instagram, TikTok, YouTube, X, Reddit or any other app.',
@@ -21,6 +22,7 @@ const TIPS = [
 ];
 
 export default function HowToScreen() {
+  useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
@@ -30,7 +32,9 @@ export default function HowToScreen() {
         {SHARE_STEPS.map((step, i) => (
           <View key={i} style={styles.step}>
             <View style={[styles.number, brutal.shadowSmall]}>
-              <Text weight="bold">{i + 1}</Text>
+              <Text weight="bold" color={colors.ink}>
+                {i + 1}
+              </Text>
             </View>
             <Text style={{ flex: 1 }}>{step}</Text>
           </View>
@@ -49,19 +53,21 @@ export default function HowToScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.md, gap: spacing.sm, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  label: { marginTop: spacing.lg, marginBottom: spacing.xs },
-  step: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start', paddingVertical: spacing.xs },
-  number: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tip: { padding: spacing.md, gap: 4 },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    content: { paddingHorizontal: spacing.md, gap: spacing.sm, maxWidth: 760, width: '100%', alignSelf: 'center' },
+    label: { marginTop: spacing.lg, marginBottom: spacing.xs },
+    step: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start', paddingVertical: spacing.xs },
+    number: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tip: { padding: spacing.md, gap: 4 },
+  }),
+);

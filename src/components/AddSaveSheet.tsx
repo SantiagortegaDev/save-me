@@ -3,16 +3,17 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 
 import { INBOX_ID } from '../db/schema';
 import { haptic } from '../lib/haptics';
 import { saveImage, saveLink } from '../lib/saving';
 import { extractUrl, normalizeUrl } from '../lib/url';
-import { colors, spacing } from '../theme';
+import { colors, spacing, themed } from '../theme';
 import { CollectionPicker } from './CollectionPicker';
 import { Sheet } from './Sheet';
 import { Button, Input, Label, Text } from './ui';
+import { Alert } from '../lib/dialog';
 
 type Props = { onClose: () => void; defaultCollectionId?: string };
 
@@ -120,7 +121,7 @@ function AddSaveForm({ onClose, defaultCollectionId }: Props) {
         <Switch
           value={pinned}
           onValueChange={setPinned}
-          trackColor={{ true: colors.ink, false: '#D6D6D6' }}
+          trackColor={{ true: colors.ink, false: colors.track }}
           thumbColor={colors.white}
         />
       </View>
@@ -130,7 +131,9 @@ function AddSaveForm({ onClose, defaultCollectionId }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  pinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+    pinRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  }),
+);

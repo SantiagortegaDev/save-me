@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Illustration, type IllustrationName } from '../components/Illustrations';
 import { Button, Text } from '../components/ui';
 import { useSettings } from '../lib/settings';
-import { brutal, colors, spacing } from '../theme';
+import { brutal, colors, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
 
 const STEPS = [
   {
@@ -42,6 +43,7 @@ const STEPS = [
 ];
 
 export default function OnboardingScreen() {
+  useTheme();
   const insets = useSafeAreaInsets();
   const { update } = useSettings();
   const [step, setStep] = useState(0);
@@ -88,23 +90,25 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.paper, paddingHorizontal: spacing.lg },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24 },
-  dots: { flexDirection: 'row', gap: 6 },
-  dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: colors.ink, backgroundColor: colors.white },
-  dotActive: { width: 26, backgroundColor: colors.ink },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
-  art: {
-    width: 200,
-    height: 200,
-    borderRadius: 36,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '-4deg' }],
-  },
-  title: { textAlign: 'center', lineHeight: 36 },
-  body: { textAlign: 'center', maxWidth: 340 },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.paper, paddingHorizontal: spacing.lg },
+    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24 },
+    dots: { flexDirection: 'row', gap: 6 },
+    dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: colors.ink, backgroundColor: colors.surface },
+    dotActive: { width: 26, backgroundColor: colors.text },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+    art: {
+      width: 200,
+      height: 200,
+      borderRadius: 36,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+      transform: [{ rotate: '-4deg' }],
+    },
+    title: { textAlign: 'center', lineHeight: 36 },
+    body: { textAlign: 'center', maxWidth: 340 },
+  }),
+);

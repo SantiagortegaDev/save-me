@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { haptic } from '../lib/haptics';
-import { brutal, colors, spacing } from '../theme';
+import { brutal, colors, spacing, themed } from '../theme';
 import { Icon, Text, type IconName } from './ui';
 
 export function SettingsGroup({ children }: { children: ReactNode }) {
@@ -31,10 +31,10 @@ export function SettingsRow({
   const content = (
     <>
       <View style={[styles.icon, { backgroundColor: danger ? colors.danger : iconColor }]}>
-        <Icon name={icon} size={18} />
+        <Icon name={icon} size={18} color={colors.ink} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text weight="semibold" color={danger ? colors.danger : colors.ink}>
+        <Text weight="semibold" color={danger ? colors.danger : colors.text}>
           {title}
         </Text>
         {subtitle ? (
@@ -50,7 +50,7 @@ export function SettingsRow({
             haptic.select();
             toggle.onChange(v);
           }}
-          trackColor={{ true: colors.ink, false: '#D6D6D6' }}
+          trackColor={{ true: colors.ink, false: colors.track }}
           thumbColor={colors.white}
         />
       ) : (
@@ -73,27 +73,29 @@ export function SettingsRow({
   );
 }
 
-const styles = StyleSheet.create({
-  group: { gap: spacing.sm + 2 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: 10,
-  },
-  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
-  icon: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    group: { gap: spacing.sm + 2 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 12,
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: 10,
+    },
+    pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
+    icon: {
+      width: 34,
+      height: 34,
+      borderRadius: 9,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);

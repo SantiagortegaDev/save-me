@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { haptic } from '../lib/haptics';
-import { brutal, colors } from '../theme';
+import { brutal, colors, themed } from '../theme';
 import { Text } from './ui';
 
 export const TAG_COLORS = ['#FF7A1A', '#3D7BFF', '#8B5CF6', '#F06EAA', '#FFC21A', '#2FB86A', '#EE4266', '#22B5E8', '#111111', '#B07A4F'];
@@ -69,39 +69,41 @@ export function TagChip({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flexDirection: 'row', alignItems: 'center' },
-  point: {
-    position: 'absolute',
-    borderLeftWidth: brutal.border,
-    borderBottomWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: 3,
-    transform: [{ rotate: '45deg' }],
-  },
-  body: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingLeft: 4,
-    paddingRight: 6,
-    borderTopWidth: brutal.border,
-    borderBottomWidth: brutal.border,
-    borderRightWidth: brutal.border,
-    borderColor: colors.ink,
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
-  },
-  hole: { width: 7, height: 7, borderRadius: 4, borderWidth: 1.5, borderColor: colors.ink, backgroundColor: colors.white },
-  count: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    root: { flexDirection: 'row', alignItems: 'center' },
+    point: {
+      position: 'absolute',
+      borderLeftWidth: brutal.border,
+      borderBottomWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: 3,
+      transform: [{ rotate: '45deg' }],
+    },
+    body: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingLeft: 4,
+      paddingRight: 6,
+      borderTopWidth: brutal.border,
+      borderBottomWidth: brutal.border,
+      borderRightWidth: brutal.border,
+      borderColor: colors.ink,
+      borderTopRightRadius: 6,
+      borderBottomRightRadius: 6,
+    },
+    hole: { width: 7, height: 7, borderRadius: 4, borderWidth: 1.5, borderColor: colors.ink, backgroundColor: colors.surface },
+    count: {
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
+      paddingHorizontal: 4,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }),
+);

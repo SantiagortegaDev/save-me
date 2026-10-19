@@ -1,6 +1,6 @@
 {
   "name": "saveme",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/sora": "^0.4.2",
@@ -17,6 +17,7 @@
     "expo-image": "~58.0.15",
     "expo-image-manipulator": "~58.0.14",
     "expo-image-picker": "~58.0.10",
+    "expo-intent-launcher": "~58.0.3",
     "expo-linking": "~58.0.13",
     "expo-notifications": "~58.1.5",
     "expo-router": "~58.0.23",
@@ -24,6 +25,7 @@
     "expo-splash-screen": "~58.0.10",
     "expo-sqlite": "~58.0.13",
     "expo-status-bar": "~58.0.3",
+    "expo-text-extractor": "^2.0.0",
     "expo-web-browser": "~58.0.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionCard } from '../components/CollectionCard';
@@ -11,18 +11,20 @@ import { TagChip } from '../components/TagChip';
 import { Chip, EmptyState, Icon, SectionHeader, Text, type IconName } from '../components/ui';
 import { deleteTag, getStats, listSaves, listTags, search, type TagWithCount } from '../db/repo';
 import { useQuery } from '../lib/useQuery';
-import { brutal, colors, fonts, fontSize, radius, spacing } from '../theme';
+import { brutal, colors, fonts, fontSize, radius, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
+import { Alert } from '../lib/dialog';
 
 const TILTS = [-4, 3, -2, 4, -3, 2];
 
 function Stat({ icon, value, label, active, onPress }: { icon: IconName; value: number; label: string; active?: boolean; onPress?: () => void }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole="button" accessibilityLabel={`${value} ${label}`} style={[styles.stat, active && styles.statActive]}>
-      <Icon name={icon} size={16} />
-      <Text weight="heavy" size="lg">
+      <Icon name={icon} size={16} color={colors.ink} />
+      <Text weight="heavy" size="lg" color={colors.ink}>
         {value}
       </Text>
-      <Text size="xxs" weight="semibold">
+      <Text size="xxs" weight="semibold" color={colors.ink}>
         {label}
       </Text>
     </Pressable>
@@ -30,6 +32,7 @@ function Stat({ icon, value, label, active, onPress }: { icon: IconName; value: 
 }
 
 export default function SearchScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -154,7 +157,7 @@ export default function SearchScreen() {
         ) : (
           <>
             <View style={[styles.library, brutal.shadow]}>
-              <Text size="xxs" weight="heavy" style={{ letterSpacing: 1 }}>
+              <Text size="xxs" weight="heavy" style={{ letterSpacing: 1 }} color={colors.ink}>
                 YOUR LIBRARY
               </Text>
               <View style={styles.stats}>
@@ -197,37 +200,39 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  searchBox: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
-  searchInput: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: 12,
-    minHeight: 44,
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  searchText: { flex: 1, fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.ink, paddingVertical: 8 },
-  cancel: {
-    paddingHorizontal: 14,
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  library: { backgroundColor: colors.primary, borderWidth: brutal.border, borderColor: colors.ink, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
-  stats: { flexDirection: 'row', gap: 6 },
-  stat: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderRadius: radius.md, borderWidth: brutal.border, borderColor: colors.transparent },
-  statActive: { borderColor: colors.ink, backgroundColor: '#FFE68A' },
-  tagsTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.lg, marginBottom: spacing.md },
-  tagCloud: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: spacing.md, paddingLeft: 4 },
-  tagHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
-  content: { paddingHorizontal: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    searchBox: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
+    searchInput: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: 12,
+      minHeight: 44,
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    searchText: { flex: 1, fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.ink, paddingVertical: 8 },
+    cancel: {
+      paddingHorizontal: 14,
+      justifyContent: 'center',
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    library: { backgroundColor: colors.primary, borderWidth: brutal.border, borderColor: colors.ink, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
+    stats: { flexDirection: 'row', gap: 6 },
+    stat: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderRadius: radius.md, borderWidth: brutal.border, borderColor: colors.transparent },
+    statActive: { borderColor: colors.ink, backgroundColor: colors.sunny },
+    tagsTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.lg, marginBottom: spacing.md },
+    tagCloud: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: spacing.md, paddingLeft: 4 },
+    tagHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+    content: { paddingHorizontal: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  }),
+);

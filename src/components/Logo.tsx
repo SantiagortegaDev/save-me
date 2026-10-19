@@ -6,7 +6,7 @@ const BACK = 'M175.9 124.9 L357.1 109.1 Q381.0 107.0 381.5 131.0 L386.5 389.0 Q3
 
 export function Logo({ size = 40 }: { size?: number }) {
   return (
-    <Svg width={size} height={size} viewBox="112 76 284 356" accessibilityLabel="SaveMe">
+    <Svg width={size} height={size} viewBox="78 72.5 360 360" accessibilityLabel="SaveMe">
       <Path d={BACK} fill="#86BEF4" stroke="#111111" strokeWidth={11} strokeLinejoin="round" />
       <Path d={FRONT} fill="#FCCF44" stroke="#111111" strokeWidth={11} strokeLinejoin="round" />
       <Rect x={199} y={203} width={21} height={42} rx={10.5} fill="#111111" />

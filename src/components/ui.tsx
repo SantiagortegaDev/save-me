@@ -17,12 +17,12 @@ import {
 
 import { haptic } from '../lib/haptics';
 import { Illustration, type IllustrationName } from './Illustrations';
-import { brutal, colors, fontSize, fonts, radius, spacing } from '../theme';
+import { brutal, colors, fonts, fontSize, radius, spacing, themed } from '../theme';
 
 export type IconName = ComponentProps<typeof Feather>['name'];
 
-export function Icon({ name, size = 20, color = colors.ink }: { name: IconName; size?: number; color?: string }) {
-  return <Feather name={name} size={size} color={color} />;
+export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color?: string }) {
+  return <Feather name={name} size={size} color={color ?? colors.text} />;
 }
 
 type Weight = keyof typeof fonts;
@@ -30,11 +30,11 @@ type Weight = keyof typeof fonts;
 export function Text({
   weight = 'regular',
   size = 'base',
-  color = colors.ink,
+  color,
   style,
   ...rest
 }: TextProps & { weight?: Weight; size?: keyof typeof fontSize; color?: string }) {
-  return <RNText {...rest} style={[{ fontFamily: fonts[weight], fontSize: fontSize[size], color }, style]} />;
+  return <RNText {...rest} style={[{ fontFamily: fonts[weight], fontSize: fontSize[size], color: color ?? colors.text }, style]} />;
 }
 
 export function Label({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
@@ -47,13 +47,16 @@ export function Label({ children, style }: { children: ReactNode; style?: StyleP
 
 type ButtonVariant = 'primary' | 'accent' | 'danger' | 'plain' | 'ghost';
 
-const VARIANT_BG: Record<ButtonVariant, string> = {
-  primary: colors.primary,
-  accent: colors.accent,
-  danger: colors.danger,
-  plain: colors.white,
-  ghost: colors.transparent,
-};
+function variantBg(variant: ButtonVariant): string {
+  return { primary: colors.primary, accent: colors.accent, danger: colors.danger, plain: colors.surface, ghost: colors.transparent }[variant];
+}
+
+// Content on yellow/green/red fills stays dark in both schemes; on surfaces it follows the theme.
+export function contentOn(background: string): string {
+  return background === colors.surface || background === colors.card || background === colors.paper || background === colors.transparent
+    ? colors.text
+    : colors.ink;
+}
 
 export function Button({
   title,
@@ -87,7 +90,7 @@ export function Button({
       }}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: VARIANT_BG[variant], paddingVertical: pad, paddingHorizontal: pad + 6 },
+        { backgroundColor: variantBg(variant), paddingVertical: pad, paddingHorizontal: pad + 6 },
         ghost ? styles.ghost : pressed ? styles.pressed : brutal.shadow,
         fullWidth && { alignSelf: 'stretch' },
         (disabled || loading) && { opacity: 0.5 },
@@ -96,12 +99,12 @@ export function Button({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={colors.ink} />
+        <ActivityIndicator color={contentOn(variantBg(variant))} />
       ) : (
         <>
-          {icon ? <Icon name={icon} size={size === 'sm' ? 16 : 18} /> : null}
+          {icon ? <Icon name={icon} size={size === 'sm' ? 16 : 18} color={contentOn(variantBg(variant))} /> : null}
           {title ? (
-            <Text weight="bold" size={size === 'lg' ? 'md' : size === 'sm' ? 'sm' : 'base'}>
+            <Text weight="bold" size={size === 'lg' ? 'md' : size === 'sm' ? 'sm' : 'base'} color={contentOn(variantBg(variant))}>
               {title}
             </Text>
           ) : null}
@@ -114,7 +117,7 @@ export function Button({
 export function IconButton({
   icon,
   onPress,
-  color = colors.white,
+  color,
   accessibilityLabel,
   size = 40,
 }: {
@@ -135,11 +138,11 @@ export function IconButton({
       }}
       style={({ pressed }) => [
         styles.iconButton,
-        { width: size, height: size, backgroundColor: color },
+        { width: size, height: size, backgroundColor: color ?? colors.surface },
         pressed ? styles.pressed : brutal.shadowSmall,
       ]}
     >
-      <Icon name={icon} size={size * 0.48} />
+      <Icon name={icon} size={size * 0.48} color={contentOn(color ?? colors.surface)} />
     </Pressable>
   );
 }
@@ -199,10 +202,10 @@ export function Chip({
         haptic.select();
         onPress?.();
       }}
-      style={[styles.chip, { backgroundColor: active ? color : colors.white }, active ? brutal.shadowSmall : null]}
+      style={[styles.chip, { backgroundColor: active ? color : colors.surface }, active ? brutal.shadowSmall : null]}
     >
-      {icon ? <Icon name={icon} size={14} /> : null}
-      <Text weight={active ? 'bold' : 'medium'} size="sm">
+      {icon ? <Icon name={icon} size={14} color={active ? colors.ink : colors.text} /> : null}
+      <Text weight={active ? 'bold' : 'medium'} size="sm" color={active ? colors.ink : colors.text}>
         {label}
       </Text>
     </Pressable>
@@ -255,69 +258,71 @@ export function SectionHeader({ title, right }: { title: string; right?: ReactNo
   );
 }
 
-export const styles = StyleSheet.create({
-  label: { letterSpacing: 1.2, textTransform: 'uppercase' },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  ghost: { borderColor: colors.transparent },
-  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: '1px 1px 0px #111111' },
-  iconButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  card: {
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    borderRadius: radius.full,
-  },
-  input: {
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-    backgroundColor: colors.white,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.ink,
-  },
-  empty: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg },
-  emptyBadge: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: colors.primary,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-});
+export const styles = themed(() =>
+  StyleSheet.create({
+    label: { letterSpacing: 1.2, textTransform: 'uppercase' },
+    button: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    ghost: { borderColor: colors.transparent },
+    pressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: '1px 1px 0px #111111' },
+    iconButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    card: {
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      borderRadius: radius.full,
+    },
+    input: {
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+      backgroundColor: colors.surface,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontFamily: fonts.medium,
+      fontSize: fontSize.md,
+      color: colors.text,
+    },
+    empty: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg },
+    emptyBadge: {
+      width: 84,
+      height: 84,
+      borderRadius: 42,
+      backgroundColor: colors.primary,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+  }),
+);

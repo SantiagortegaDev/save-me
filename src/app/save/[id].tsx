@@ -1,9 +1,10 @@
+import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { confirmDeleteSave } from '../../components/actions';
@@ -26,10 +27,13 @@ import {
   type Save,
 } from '../../db/repo';
 import { haptic } from '../../lib/haptics';
+import { readingMinutes } from '../../lib/readability';
 import { refreshMetadata } from '../../lib/saving';
 import { hostname } from '../../lib/url';
 import { useQuery } from '../../lib/useQuery';
-import { brutal, colors, radius, spacing } from '../../theme';
+import { brutal, colors, radius, spacing, themed } from '../../theme';
+import { useTheme } from '../../lib/theme';
+import { Alert } from '../../lib/dialog';
 
 function TagSheet({ save, visible, onClose }: { save: Save; visible: boolean; onClose: () => void }) {
   const db = useSQLiteContext();
@@ -84,6 +88,7 @@ function TagSheet({ save, visible, onClose }: { save: Save; visible: boolean; on
 }
 
 export default function SaveDetailScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: save, loading } = useQuery(() => getSave(db, id), [db, id]);
@@ -151,6 +156,7 @@ function SaveDetail({ save }: { save: Save }) {
   }
 
   const [expanded, setExpanded] = useState(false);
+  const [ocrExpanded, setOcrExpanded] = useState(false);
   const date = new Date(save.created_at);
   const dateLabel = `${date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}, ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
   const actions: { icon: IconName; label: string; onPress: () => void; danger?: boolean; show: boolean }[] = [
@@ -172,7 +178,7 @@ function SaveDetail({ save }: { save: Save }) {
             <IconButton
               icon="map-pin"
               size={38}
-              color={save.pinned ? colors.primary : colors.white}
+              color={save.pinned ? colors.primary : colors.surface}
               accessibilityLabel={save.pinned ? 'Unpin' : 'Pin'}
               onPress={() => setSavePinned(db, save.id, !save.pinned)}
             />
@@ -217,14 +223,38 @@ function SaveDetail({ save }: { save: Save }) {
           {save.kind === 'link' ? (
             <Pressable onPress={open} accessibilityRole="button" accessibilityLabel="Open link" style={({ pressed }) => [styles.openBar, pressed ? null : brutal.shadowSmall]}>
               <View style={{ flex: 1 }}>
-                <Text weight="heavy">Open link</Text>
-                <Text size="xxs" color={colors.inkMuted} numberOfLines={1}>
+                <Text weight="heavy" color={colors.ink}>
+                  Open link
+                </Text>
+                <Text size="xxs" color={colors.ink} numberOfLines={1} style={{ opacity: 0.65 }}>
                   {save.url.replace(/^https?:\/\//, '')}
                 </Text>
               </View>
               <View style={styles.openArrow}>
                 <Icon name="arrow-up-right" size={18} color={colors.white} />
               </View>
+            </Pressable>
+          ) : null}
+
+          {save.kind === 'link' && save.article_text !== '' ? (
+            <Pressable
+              onPress={() => router.push(`/reader/${save.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel="Read offline"
+              style={({ pressed }) => [styles.readBar, pressed ? null : brutal.shadowSmall]}
+            >
+              <View style={styles.readIcon}>
+                <Icon name="book-open" size={16} color={colors.ink} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text weight="bold" size="sm">
+                  Read offline
+                </Text>
+                <Text size="xxs" color={colors.inkMuted}>
+                  {save.article_text ? `Saved text · ${readingMinutes(save.article_text)} min read` : 'Download the article text'}
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={18} />
             </Pressable>
           ) : null}
 
@@ -240,10 +270,10 @@ function SaveDetail({ save }: { save: Save }) {
                     haptic.tap();
                     a.onPress();
                   }}
-                  style={({ pressed }) => [styles.action, i > 0 && styles.actionDivider, pressed && { backgroundColor: '#F2F2EE' }]}
+                  style={({ pressed }) => [styles.action, i > 0 && styles.actionDivider, pressed && { backgroundColor: colors.pressed }]}
                 >
-                  <Icon name={a.icon} size={18} color={a.danger ? colors.danger : colors.ink} />
-                  <Text size="xxs" weight="bold" color={a.danger ? colors.danger : colors.ink}>
+                  <Icon name={a.icon} size={18} color={a.danger ? colors.danger : colors.text} />
+                  <Text size="xxs" weight="bold" color={a.danger ? colors.danger : colors.text}>
                     {a.label}
                   </Text>
                 </Pressable>
@@ -264,14 +294,47 @@ function SaveDetail({ save }: { save: Save }) {
             </>
           ) : null}
 
+          {save.kind === 'image' && save.ocr_text ? (
+            <>
+              <View style={[styles.labelRow, styles.label]}>
+                <Label>Text in image</Label>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Copy text"
+                  hitSlop={8}
+                  onPress={async () => {
+                    await Clipboard.setStringAsync(save.ocr_text ?? '');
+                    haptic.success();
+                  }}
+                  style={styles.copy}
+                >
+                  <Icon name="copy" size={12} />
+                  <Text size="xxs" weight="bold">
+                    Copy
+                  </Text>
+                </Pressable>
+              </View>
+              <View style={styles.ocr}>
+                <Text size="sm" selectable numberOfLines={ocrExpanded ? undefined : 6} style={{ lineHeight: 20 }}>
+                  {save.ocr_text}
+                </Text>
+              </View>
+              {save.ocr_text.split('\n').length > 6 || save.ocr_text.length > 300 ? (
+                <Text size="xs" weight="bold" onPress={() => setOcrExpanded(!ocrExpanded)} style={{ textDecorationLine: 'underline' }}>
+                  {ocrExpanded ? 'Show less' : 'Show all'}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+
           <Label style={styles.label}>Tags</Label>
           <View style={styles.wrap}>
             {(tags ?? []).map((t) => (
               <Pressable key={t.id} onPress={() => removeTagFromSave(db, save.id, t.id)} accessibilityLabel={`Remove tag ${t.name}`} style={styles.tagChip}>
-                <Text size="xs" weight="bold">
+                <Text size="xs" weight="bold" color={colors.ink}>
                   #{t.name}
                 </Text>
-                <Icon name="x" size={12} />
+                <Icon name="x" size={12} color={colors.ink} />
               </Pressable>
             ))}
             <Pressable onPress={() => setTagging(true)} accessibilityRole="button" style={styles.addTag}>
@@ -295,7 +358,7 @@ function SaveDetail({ save }: { save: Save }) {
       </ScrollView>
 
       <TagSheet save={save} visible={tagging} onClose={() => setTagging(false)} />
-      <MoveSheet save={moving ? save : null} onClose={() => setMoving(false)} />
+      <MoveSheet saves={moving ? [save] : null} onClose={() => setMoving(false)} />
       <Modal visible={zoom} transparent animationType="fade" onRequestClose={() => setZoom(false)}>
         <Pressable style={styles.zoom} onPress={() => setZoom(false)} accessibilityLabel="Close image">
           {preview ? <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} contentFit="contain" /> : null}
@@ -305,87 +368,122 @@ function SaveDetail({ save }: { save: Save }) {
   );
 }
 
-const styles = StyleSheet.create({
-  hero: { borderBottomWidth: brutal.border, borderColor: colors.ink },
-  heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
-  heroBar: { position: 'absolute', left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' },
-  placeholder: { alignItems: 'center', justifyContent: 'center' },
-  sheet: {
-    marginTop: -48,
-    marginHorizontal: spacing.md,
-    padding: spacing.md,
-    gap: spacing.sm,
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.lg,
-    maxWidth: 760,
-    alignSelf: 'center',
-    width: '92%',
-  },
-  source: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  collectionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    backgroundColor: colors.cream,
-  },
-  dot: { width: 10, height: 10, borderRadius: 3, borderWidth: 1, borderColor: colors.ink },
-  openBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-    padding: 12,
-    backgroundColor: colors.primary,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  openArrow: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
-  actionBar: {
-    flexDirection: 'row',
-    marginTop: spacing.xs,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    backgroundColor: colors.card,
-  },
-  action: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 10 },
-  actionDivider: { borderLeftWidth: brutal.borderThin, borderColor: colors.ink },
-  label: { marginTop: spacing.md },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  tagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.primary,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  addTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  notes: { backgroundColor: colors.cream, borderWidth: brutal.borderThin },
-  row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  zoom: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    hero: { borderBottomWidth: brutal.border, borderColor: colors.ink },
+    heroOverlay: { position: 'absolute', top: 0, left: 0, right: 0 },
+    heroBar: { position: 'absolute', left: spacing.md, right: spacing.md, flexDirection: 'row', justifyContent: 'space-between' },
+    placeholder: { alignItems: 'center', justifyContent: 'center' },
+    sheet: {
+      marginTop: -48,
+      marginHorizontal: spacing.md,
+      padding: spacing.md,
+      gap: spacing.sm,
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.lg,
+      maxWidth: 760,
+      alignSelf: 'center',
+      width: '92%',
+    },
+    source: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
+    collectionChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      backgroundColor: colors.cream,
+    },
+    dot: { width: 10, height: 10, borderRadius: 3, borderWidth: 1, borderColor: colors.ink },
+    openBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.sm,
+      padding: 12,
+      backgroundColor: colors.primary,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    openArrow: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+    readBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      padding: 10,
+      backgroundColor: colors.surface,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    readIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: colors.accent,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    copy: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      backgroundColor: colors.surface,
+    },
+    ocr: { padding: spacing.sm, backgroundColor: colors.cream, borderWidth: brutal.borderThin, borderColor: colors.ink, borderRadius: radius.md },
+    actionBar: {
+      flexDirection: 'row',
+      marginTop: spacing.xs,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: colors.card,
+    },
+    action: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 10 },
+    actionDivider: { borderLeftWidth: brutal.borderThin, borderColor: colors.ink },
+    label: { marginTop: spacing.md },
+    wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    tagChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.primary,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    addTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    notes: { backgroundColor: colors.cream, borderWidth: brutal.borderThin },
+    row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+    zoom: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
+  }),
+);

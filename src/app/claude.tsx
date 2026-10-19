@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Share, StyleSheet, Switch, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Share, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -21,7 +21,9 @@ import {
   type McpState,
 } from '../lib/mcpSync';
 import type { Permission } from '../shared/sync';
-import { brutal, colors, radius, spacing } from '../theme';
+import { brutal, colors, radius, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
+import { Alert } from '../lib/dialog';
 
 function mask(url: string): string {
   const cut = url.lastIndexOf('.');
@@ -43,6 +45,7 @@ const STEPS_APP = [
 ];
 
 export default function ClaudeScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const [state, setState] = useState<McpState | null | undefined>(undefined);
@@ -105,13 +108,13 @@ export default function ClaudeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
-      <ScreenHeader title="Claude (MCP)" right={busy ? <ActivityIndicator color={colors.ink} /> : null} />
+      <ScreenHeader title="Claude (MCP)" right={busy ? <ActivityIndicator color={colors.text} /> : null} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
         <Card color={colors.lilac} style={styles.hero}>
-          <Text weight="bold" size="lg">
+          <Text weight="bold" size="lg" color={colors.ink}>
             Talk to your library with Claude
           </Text>
-          <Text size="sm">
+          <Text size="sm" color={colors.ink}>
             Let Claude search your saves, summarize what you collected and — if you allow it — tidy up collections, tags and pins for you.
           </Text>
         </Card>
@@ -128,7 +131,7 @@ export default function ClaudeScreen() {
               value={enabled}
               disabled={busy || state === undefined}
               onValueChange={toggle}
-              trackColor={{ true: colors.ink, false: '#D6D6D6' }}
+              trackColor={{ true: colors.ink, false: colors.track }}
               thumbColor={colors.white}
             />
           </View>
@@ -177,7 +180,7 @@ export default function ClaudeScreen() {
             {STEPS_APP.map((step, i) => (
               <View key={i} style={styles.step}>
                 <View style={styles.num}>
-                  <Text weight="bold" size="sm">
+                  <Text weight="bold" size="sm" color={colors.ink}>
                     {i + 1}
                   </Text>
                 </View>
@@ -211,31 +214,33 @@ export default function ClaudeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center', gap: spacing.sm },
-  hero: { padding: spacing.md, gap: spacing.xs, marginBottom: spacing.sm },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
-  label: { marginTop: spacing.lg },
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  urlBox: {
-    backgroundColor: colors.white,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  row: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  step: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
-  num: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  code: { backgroundColor: colors.white, borderWidth: brutal.borderThin, borderColor: colors.ink, borderRadius: radius.sm, padding: spacing.sm },
-  footer: { textAlign: 'center', marginTop: spacing.xl },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center', gap: spacing.sm },
+    hero: { padding: spacing.md, gap: spacing.xs, marginBottom: spacing.sm },
+    toggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
+    label: { marginTop: spacing.lg },
+    chips: { flexDirection: 'row', gap: spacing.sm },
+    urlBox: {
+      backgroundColor: colors.surface,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+      padding: spacing.md,
+    },
+    row: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+    step: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+    num: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    code: { backgroundColor: colors.surface, borderWidth: brutal.borderThin, borderColor: colors.ink, borderRadius: radius.sm, padding: spacing.sm },
+    footer: { textAlign: 'center', marginTop: spacing.xl },
+  }),
+);

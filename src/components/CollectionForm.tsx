@@ -1,12 +1,13 @@
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { createCollection, updateCollection, type Collection } from '../db/repo';
 import { haptic } from '../lib/haptics';
-import { brutal, collectionColors, collectionIcons, colors, radius } from '../theme';
+import { brutal, collectionColors, collectionIcons, colors, radius, themed } from '../theme';
 import { Sheet } from './Sheet';
 import { Button, Icon, Input, Label, type IconName } from './ui';
+import { Alert } from '../lib/dialog';
 
 type FormProps = {
   onClose: () => void;
@@ -84,7 +85,7 @@ function CollectionFormBody({ onClose, editing, parentId, onSaved }: FormProps) 
             }}
             style={[styles.swatch, { backgroundColor: c }, color === c && styles.selected]}
           >
-            {color === c ? <Icon name="check" size={18} /> : null}
+            {color === c ? <Icon name="check" size={18} color={colors.white} /> : null}
           </Pressable>
         ))}
       </View>
@@ -98,9 +99,9 @@ function CollectionFormBody({ onClose, editing, parentId, onSaved }: FormProps) 
               haptic.select();
               setIcon(i);
             }}
-            style={[styles.iconCell, { backgroundColor: icon === i ? color : colors.white }, icon === i && styles.selected]}
+            style={[styles.iconCell, { backgroundColor: icon === i ? color : colors.surface }, icon === i && styles.selected]}
           >
-            <Icon name={i as IconName} size={18} />
+            <Icon name={i as IconName} size={18} color={icon === i ? colors.white : colors.text} />
           </Pressable>
         ))}
       </View>
@@ -109,25 +110,27 @@ function CollectionFormBody({ onClose, editing, parentId, onSaved }: FormProps) 
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  swatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconCell: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selected: { boxShadow: '2px 2px 0px #111111', borderWidth: brutal.border },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    swatch: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconCell: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.md,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    selected: { boxShadow: '2px 2px 0px #111111', borderWidth: brutal.border },
+  }),
+);

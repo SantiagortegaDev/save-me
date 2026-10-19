@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Redirect, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddSaveSheet } from '../components/AddSaveSheet';
@@ -20,7 +20,9 @@ import { saveLink } from '../lib/saving';
 import { useSettings } from '../lib/settings';
 import { extractUrl, normalizeUrl } from '../lib/url';
 import { useQuery } from '../lib/useQuery';
-import { brutal, colors, fonts, fontSize, radius, spacing } from '../theme';
+import { brutal, colors, fonts, fontSize, radius, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
+import { Alert } from '../lib/dialog';
 
 const SORT_LABELS: Record<CollectionSort, string> = { oldest: 'Oldest', newest: 'Newest', name: 'Name', recent: 'Recently saved' };
 
@@ -88,13 +90,14 @@ function QuickSave({ onOpenSheet }: { onOpenSheet: () => void }) {
         }}
         style={({ pressed }) => [styles.quickButton, pressed ? styles.pressed : brutal.shadowSmall, busy && { opacity: 0.5 }]}
       >
-        <Icon name="plus" size={24} />
+        <Icon name="plus" size={24} color={colors.ink} />
       </Pressable>
     </View>
   );
 }
 
 export default function HomeScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const { settings, update } = useSettings();
   const insets = useSafeAreaInsets();
@@ -129,7 +132,9 @@ export default function HomeScreen() {
       >
         <View style={styles.toolbar}>
           <IconButton icon="settings" accessibilityLabel="Settings" size={38} onPress={() => router.push('/settings')} />
-          <Logo size={40} />
+          <View style={styles.logo} pointerEvents="none">
+            <Logo size={46} />
+          </View>
           <View style={styles.toolbarRight}>
             <IconButton icon="folder-plus" accessibilityLabel="Create collection" size={38} onPress={() => setCreating(true)} />
             <IconButton icon="search" accessibilityLabel="Search" size={38} onPress={() => router.push('/search')} />
@@ -153,7 +158,7 @@ export default function HomeScreen() {
             style={({ pressed }) => [styles.waiting, pressed ? styles.pressed : brutal.shadowSmall]}
           >
             <View style={styles.waitingIcon}>
-              <Icon name="bell" size={20} />
+              <Icon name="bell" size={20} color={colors.ink} />
             </View>
             <View style={{ flex: 1 }}>
               <Text weight="bold">
@@ -235,63 +240,67 @@ export default function HomeScreen() {
           setEditing(null);
         }}
       />
-      <MoveSheet save={moving} onClose={() => setMoving(null)} />
+      <MoveSheet saves={moving ? [moving] : null} onClose={() => setMoving(null)} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
-  toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toolbarRight: { flexDirection: 'row', gap: spacing.sm },
-  headline: { marginTop: spacing.lg, marginBottom: spacing.md, lineHeight: 40, letterSpacing: -0.8 },
-  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
-  quickRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },
-  quickInput: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    minHeight: 48,
-  },
-  quickText: { flex: 1, fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.ink, paddingVertical: 10 },
-  quickButton: {
-    width: 48,
-    backgroundColor: colors.primary,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  waiting: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.md,
-    padding: spacing.sm + 4,
-    backgroundColor: colors.card,
-    borderWidth: brutal.border,
-    borderColor: colors.ink,
-    borderRadius: radius.md,
-  },
-  waitingIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: colors.accent,
-    borderWidth: brutal.borderThin,
-    borderColor: colors.ink,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg, marginBottom: spacing.sm },
-  sortButton: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  recent: { marginHorizontal: -spacing.md, paddingLeft: spacing.md, overflow: 'visible' },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    content: { paddingHorizontal: spacing.md, maxWidth: 1000, width: '100%', alignSelf: 'center' },
+    toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 46 },
+    // Centered on the screen, independent of how many buttons sit on each side.
+    logo: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+    toolbarRight: { flexDirection: 'row', gap: spacing.sm },
+    headline: { marginTop: spacing.lg, marginBottom: spacing.md, lineHeight: 40, letterSpacing: -0.8 },
+    pressed: { transform: [{ translateX: 2 }, { translateY: 2 }] },
+    quickRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'stretch' },
+    quickInput: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      minHeight: 48,
+    },
+    quickText: { flex: 1, fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.ink, paddingVertical: 10 },
+    quickButton: {
+      width: 48,
+      backgroundColor: colors.primary,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    waiting: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginTop: spacing.md,
+      padding: spacing.sm + 4,
+      backgroundColor: colors.card,
+      borderWidth: brutal.border,
+      borderColor: colors.ink,
+      borderRadius: radius.md,
+    },
+    waitingIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: colors.accent,
+      borderWidth: brutal.borderThin,
+      borderColor: colors.ink,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg, marginBottom: spacing.sm },
+    sortButton: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    recent: { marginHorizontal: -spacing.md, paddingLeft: spacing.md, overflow: 'visible' },
+  }),
+);

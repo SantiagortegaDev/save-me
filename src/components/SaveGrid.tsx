@@ -12,12 +12,17 @@ export function SaveGrid({
   itemWidth,
   gap,
   onLongPress,
+  onPress,
+  selection,
 }: {
   saves: Save[];
   columns: number;
   itemWidth: number;
   gap: number;
   onLongPress?: (save: Save) => void;
+  onPress?: (save: Save) => void;
+  // Set while selecting several saves.
+  selection?: Set<string> | null;
 }) {
   const { settings } = useSettings();
   const cols: Save[][] = Array.from({ length: columns }, () => []);
@@ -33,7 +38,14 @@ export function SaveGrid({
       {cols.map((list, i) => (
         <View key={i} style={{ width: itemWidth, gap }}>
           {list.map((s) => (
-            <SaveCard key={s.id} save={s} width={itemWidth} onLongPress={onLongPress ? () => onLongPress(s) : undefined} />
+            <SaveCard
+              key={s.id}
+              save={s}
+              width={itemWidth}
+              onLongPress={onLongPress ? () => onLongPress(s) : undefined}
+              onPress={onPress ? () => onPress(s) : undefined}
+              selected={selection ? selection.has(s.id) : undefined}
+            />
           ))}
         </View>
       ))}

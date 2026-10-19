@@ -7,6 +7,7 @@ import type { Save } from '../db/repo';
 import { imageUri } from '../lib/images';
 import { useSettings } from '../lib/settings';
 import { thumbnailUri } from '../lib/thumbnails';
+import { colors, themed } from '../theme';
 import { Icon } from './ui';
 
 // Tall phone screenshots down to wide banners; anything beyond is letterboxed.
@@ -72,7 +73,9 @@ export function SaveMedia({
   );
 }
 
-const styles = StyleSheet.create({
-  box: { width: '100%', backgroundColor: '#F1EADB', overflow: 'hidden' },
-  placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    box: { width: '100%', backgroundColor: colors.placeholder, overflow: 'hidden' },
+    placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  }),
+);

@@ -11,7 +11,12 @@ Every feature is free. No account, no ads, no tracking, no paywall.
 - **Fill or Fit**: choose whether previews fill a fixed card or each card takes its image's shape, so tall screenshots and reels show complete in a masonry grid.
 - **Images**: save screenshots and photos from the gallery or the share sheet.
 - **Unlimited collections and sub-collections**, each with its own color and icon. Pin collections and saves to the top.
-- **Tags, notes and search** across titles, URLs, descriptions, notes and tags.
+- **Tags, notes and search** across titles, URLs, descriptions, notes, tags, saved article text and text inside images.
+- **Text in images (OCR)**: text in saved screenshots and photos is recognized on the device (ML Kit / Apple Vision), so you can search it and copy it.
+- **Offline reading**: a clean, readable copy of saved articles is stored on the phone; open it from a save with *Read offline*.
+- **Select several saves** to move, tag, pin, mark as opened or delete them in one go.
+- **Dark mode**: follows your phone, or force light or dark in Settings. The launcher icon switches too.
+- **In-app updates** (Android): SaveMe checks GitHub for a new release and downloads and installs the APK for you.
 - **Focus Mode**: review saves one card at a time, swipe to move on, open now, or shuffle.
 - **Review reminders**: an optional daily notification at the time you choose when unopened saves are waiting.
 - **Backup & restore** to a plain `.json` file (with or without images).

@@ -33,6 +33,9 @@ export type Save = {
   thumbnail_local: string | null;
   media_width: number | null;
   media_height: number | null;
+  // null = not attempted yet; '' = attempted, nothing found.
+  article_text: string | null;
+  ocr_text: string | null;
   favicon: string | null;
   site_name: string | null;
   note: string | null;
@@ -289,7 +292,21 @@ export async function updateSave(
   db: SQLiteDatabase,
   id: string,
   patch: Partial<
-    Pick<Save, 'title' | 'description' | 'thumbnail' | 'thumbnail_local' | 'media_width' | 'media_height' | 'favicon' | 'site_name' | 'note' | 'url'>
+    Pick<
+      Save,
+      | 'title'
+      | 'description'
+      | 'thumbnail'
+      | 'thumbnail_local'
+      | 'media_width'
+      | 'media_height'
+      | 'favicon'
+      | 'site_name'
+      | 'note'
+      | 'url'
+      | 'article_text'
+      | 'ocr_text'
+    >
   >,
 ): Promise<void> {
   const keys = Object.keys(patch) as (keyof typeof patch)[];
@@ -313,6 +330,47 @@ export async function markSeen(db: SQLiteDatabase, id: string, seen = true) {
 export async function moveSave(db: SQLiteDatabase, id: string, collectionId: string) {
   await db.runAsync('UPDATE saves SET collection_id = ?, updated_at = ? WHERE id = ?', collectionId, Date.now(), id);
   notifyChange();
+}
+
+// --- bulk actions (multi-select) ---------------------------------------------
+
+function marks(n: number) {
+  return Array.from({ length: n }, () => '?').join(', ');
+}
+
+export async function moveSaves(db: SQLiteDatabase, ids: string[], collectionId: string) {
+  if (!ids.length) return;
+  await db.runAsync(`UPDATE saves SET collection_id = ?, updated_at = ? WHERE id IN (${marks(ids.length)})`, collectionId, Date.now(), ...ids);
+  notifyChange();
+}
+
+export async function setPinnedMany(db: SQLiteDatabase, ids: string[], pinned: boolean) {
+  if (!ids.length) return;
+  await db.runAsync(`UPDATE saves SET pinned = ?, updated_at = ? WHERE id IN (${marks(ids.length)})`, pinned ? 1 : 0, Date.now(), ...ids);
+  notifyChange();
+}
+
+export async function setSeenMany(db: SQLiteDatabase, ids: string[], seen: boolean) {
+  if (!ids.length) return;
+  await db.runAsync(`UPDATE saves SET seen = ? WHERE id IN (${marks(ids.length)})`, seen ? 1 : 0, ...ids);
+  notifyChange();
+}
+
+export async function tagSaves(db: SQLiteDatabase, ids: string[], name: string) {
+  if (!ids.length || !name.trim()) return;
+  await db.withTransactionAsync(async () => {
+    for (const id of ids) await addTagToSave(db, id, name, { silent: true });
+  });
+  notifyChange();
+}
+
+// Returns the image files of the deleted saves so callers can remove them.
+export async function deleteSaves(db: SQLiteDatabase, ids: string[]): Promise<string[]> {
+  if (!ids.length) return [];
+  const rows = await db.getAllAsync<{ image_path: string | null }>(`SELECT image_path FROM saves WHERE id IN (${marks(ids.length)})`, ...ids);
+  await db.runAsync(`DELETE FROM saves WHERE id IN (${marks(ids.length)})`, ...ids);
+  notifyChange();
+  return rows.map((r) => r.image_path).filter((p): p is string => !!p);
 }
 
 export async function deleteSave(db: SQLiteDatabase, id: string): Promise<string | null> {
@@ -392,6 +450,7 @@ export async function search(db: SQLiteDatabase, query: string) {
        LEFT JOIN tags t ON t.id = st.tag_id
        WHERE s.title LIKE ?1 ESCAPE '\\' OR s.url LIKE ?1 ESCAPE '\\' OR s.description LIKE ?1 ESCAPE '\\'
           OR s.note LIKE ?1 ESCAPE '\\' OR s.site_name LIKE ?1 ESCAPE '\\' OR t.name LIKE ?1 ESCAPE '\\'
+          OR s.ocr_text LIKE ?1 ESCAPE '\\' OR s.article_text LIKE ?1 ESCAPE '\\'
        ORDER BY s.created_at DESC LIMIT 100`,
       q,
     ),

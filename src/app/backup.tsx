@@ -2,7 +2,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -10,7 +10,9 @@ import { SettingsGroup, SettingsRow } from '../components/SettingsRow';
 import { Label, Text } from '../components/ui';
 import { exportAs, exportBackup, importBookmarks, isSaveMeBackup, restoreBackup } from '../lib/backup';
 import { haptic } from '../lib/haptics';
-import { colors, spacing } from '../theme';
+import { colors, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
+import { Alert } from '../lib/dialog';
 
 async function pickTextFile(types: string[]): Promise<{ name: string; text: string } | null> {
   const result = await DocumentPicker.getDocumentAsync({ type: types, copyToCacheDirectory: true, multiple: false });
@@ -21,6 +23,7 @@ async function pickTextFile(types: string[]): Promise<{ name: string; text: stri
 }
 
 export default function BackupScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState<string | null>(null);
@@ -81,7 +84,7 @@ export default function BackupScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
-      <ScreenHeader title="Backup & import" right={busy ? <ActivityIndicator color={colors.ink} /> : null} />
+      <ScreenHeader title="Backup & import" right={busy ? <ActivityIndicator color={colors.text} /> : null} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
         <Label style={styles.label}>SaveMe backups</Label>
         <SettingsGroup>
@@ -111,7 +114,9 @@ export default function BackupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  label: { marginTop: spacing.lg, marginBottom: spacing.sm },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center' },
+    label: { marginTop: spacing.lg, marginBottom: spacing.sm },
+  }),
+);

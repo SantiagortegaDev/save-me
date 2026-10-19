@@ -1,27 +1,41 @@
-import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, Linking, ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, Platform, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '../components/Logo';
 import { ScreenHeader } from '../components/ScreenHeader';
 import { SettingsGroup, SettingsRow } from '../components/SettingsRow';
-import { Card, Label, Text } from '../components/ui';
+import { Card, Icon, Label, Text } from '../components/ui';
 import { getStats, wipeLibrary } from '../db/repo';
 import { deleteAllImages } from '../lib/images';
 import { cancelReminders, requestReminderPermission, scheduleDailyReminder, sendTestReminder } from '../lib/reminders';
 import { useSettings } from '../lib/settings';
-import { colors, spacing } from '../theme';
+import { appVersion, checkForUpdates, subscribeUpdateProgress, type UpdateProgress } from '../lib/updates';
+import { colors, spacing, themed } from '../theme';
+import { useTheme } from '../lib/theme';
+import { Alert } from '../lib/dialog';
 
 const REPO_URL = 'https://github.com/santiagortegadev/save-me';
 const REMINDER_HOURS = [8, 12, 19, 21];
 
 export default function SettingsScreen() {
+  useTheme();
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const { settings, update } = useSettings();
+  const [checking, setChecking] = useState(false);
+  const [download, setDownload] = useState<UpdateProgress>(null);
+  useEffect(() => subscribeUpdateProgress(setDownload), []);
+
+  async function checkNow() {
+    if (checking || download) return;
+    setChecking(true);
+    await checkForUpdates(update, true);
+    setChecking(false);
+  }
 
   async function toggleReminders(on: boolean) {
     if (on) {
@@ -77,13 +91,15 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
         <Card color={colors.primary} style={styles.plan}>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text size="xxs" weight="heavy" style={{ letterSpacing: 1 }}>
+            <Text size="xxs" weight="heavy" style={{ letterSpacing: 1 }} color={colors.ink}>
               YOUR PLAN
             </Text>
-            <Text weight="heavy" size="xl">
+            <Text weight="heavy" size="xl" color={colors.ink}>
               SaveMe Free
             </Text>
-            <Text size="xs">Every feature unlocked. Open source, no account, no ads, no tracking.</Text>
+            <Text size="xs" color={colors.ink}>
+              Every feature unlocked. Open source, no account, no ads, no tracking.
+            </Text>
             <View style={styles.planBadge}>
               <Text size="xxs" weight="heavy">
                 ∞ EVERYTHING INCLUDED
@@ -104,6 +120,32 @@ export default function SettingsScreen() {
             toggle={{ value: settings.haptics, onChange: (v) => update({ haptics: v }) }}
           />
           <SettingsRow
+            icon="moon"
+            iconColor={colors.lilac}
+            title="Appearance"
+            subtitle={settings.theme === 'system' ? 'Follows your phone' : settings.theme === 'dark' ? 'Always dark' : 'Always light'}
+            right={
+              <View style={styles.segment}>
+                {(['system', 'light', 'dark'] as const).map((mode) => (
+                  <Pressable
+                    key={mode}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Theme ${mode}`}
+                    accessibilityState={{ selected: settings.theme === mode }}
+                    onPress={() => update({ theme: mode })}
+                    style={[styles.segmentItem, settings.theme === mode && styles.segmentOn]}
+                  >
+                    <Icon
+                      name={mode === 'system' ? 'smartphone' : mode === 'light' ? 'sun' : 'moon'}
+                      size={14}
+                      color={settings.theme === mode ? colors.paper : colors.text}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            }
+          />
+          <SettingsRow
             icon="image"
             iconColor={colors.accent}
             title="Image previews"
@@ -118,13 +160,20 @@ export default function SettingsScreen() {
                     onPress={() => update({ imageFit: mode })}
                     style={[styles.segmentItem, settings.imageFit === mode && styles.segmentOn]}
                   >
-                    <Text size="xs" weight="bold" color={settings.imageFit === mode ? colors.white : colors.ink}>
+                    <Text size="xs" weight="bold" color={settings.imageFit === mode ? colors.paper : colors.text}>
                       {mode === 'fill' ? 'Fill' : 'Fit'}
                     </Text>
                   </Pressable>
                 ))}
               </View>
             }
+          />
+          <SettingsRow
+            icon="book-open"
+            iconColor={colors.info}
+            title="Save text for offline reading"
+            subtitle="Keeps a readable copy of articles you save"
+            toggle={{ value: settings.offlineText, onChange: (v) => update({ offlineText: v }) }}
           />
           <SettingsRow
             icon="bell"
@@ -174,34 +223,51 @@ export default function SettingsScreen() {
         <SettingsGroup>
           <SettingsRow icon="share" iconColor={colors.info} title="Save from any app" subtitle="How to use the share menu" onPress={() => router.push('/how-to')} />
           <SettingsRow icon="play-circle" iconColor={colors.info} title="Replay intro" onPress={() => router.push('/onboarding')} />
+          {Platform.OS !== 'web' ? (
+            <SettingsRow
+              icon="download"
+              iconColor={colors.accent}
+              title="Check for updates"
+              subtitle={
+                download
+                  ? `Downloading ${download.version}${download.fraction !== null ? ` · ${Math.round(download.fraction * 100)}%` : '…'}`
+                  : checking
+                    ? 'Checking…'
+                    : `You have version ${appVersion()}`
+              }
+              onPress={checkNow}
+            />
+          ) : null}
           <SettingsRow icon="github" iconColor={colors.info} title="Source code" subtitle="Report bugs, suggest features, contribute" onPress={() => WebBrowser.openBrowserAsync(REPO_URL)} />
         </SettingsGroup>
 
         <Text size="xs" color={colors.inkMuted} style={styles.footer}>
-          SaveMe {Constants.expoConfig?.version ?? ''} · MIT License · Your data stays on your device unless you export it or connect Claude.
+          SaveMe {appVersion()} · MIT License · Your data stays on your device unless you export it or connect Claude.
         </Text>
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  plan: { padding: spacing.md, marginTop: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  planLogo: { transform: [{ rotate: '8deg' }] },
-  planBadge: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 4,
-    backgroundColor: colors.white,
-  },
-  label: { marginTop: spacing.lg, marginBottom: spacing.sm },
-  footer: { textAlign: 'center', marginTop: spacing.xl },
-  segment: { flexDirection: 'row', borderWidth: 2, borderColor: colors.ink, borderRadius: 8, overflow: 'hidden' },
-  segmentItem: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.white },
-  segmentOn: { backgroundColor: colors.ink },
-});
+const styles = themed(() =>
+  StyleSheet.create({
+    content: { paddingHorizontal: spacing.md, maxWidth: 760, width: '100%', alignSelf: 'center' },
+    plan: { padding: spacing.md, marginTop: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    planLogo: { transform: [{ rotate: '8deg' }] },
+    planBadge: {
+      alignSelf: 'flex-start',
+      marginTop: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderWidth: 1.5,
+      borderColor: colors.ink,
+      borderRadius: 4,
+      backgroundColor: colors.surface,
+    },
+    label: { marginTop: spacing.lg, marginBottom: spacing.sm },
+    footer: { textAlign: 'center', marginTop: spacing.xl },
+    segment: { flexDirection: 'row', borderWidth: 2, borderColor: colors.ink, borderRadius: 8, overflow: 'hidden' },
+    segmentItem: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.surface },
+    segmentOn: { backgroundColor: colors.text },
+  }),
+);
