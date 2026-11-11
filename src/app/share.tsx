@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useIncomingShare, type SharePayload } from 'expo-sharing';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,6 +33,7 @@ export default function ShareScreen() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<'saved' | 'duplicate' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const savedItems = useRef(new Set<number>());
 
   const items = useMemo<Incoming[]>(() => {
     const out: Incoming[] = [];
@@ -47,7 +48,8 @@ export default function ShareScreen() {
         continue;
       }
       const url = extractUrl(p.value) ?? (contentType === 'website' ? contentUri : null);
-      if (url) out.push({ kind: 'link', url });
+      // Some apps share the same link twice (as text and as a URL).
+      if (url && !out.some((o) => o.kind === 'link' && o.url === url)) out.push({ kind: 'link', url });
     }
     return out;
   }, [sharedPayloads, resolvedSharedPayloads]);
@@ -57,7 +59,9 @@ export default function ShareScreen() {
     setError(null);
     try {
       let duplicates = 0;
-      for (const item of items) {
+      for (const [index, item] of items.entries()) {
+        // After a failure, a retry skips what was already saved (images have no duplicate check).
+        if (savedItems.current.has(index)) continue;
         if (item.kind === 'link') {
           const result = await saveLink(db, item.url, { collectionId, pinned });
           if (result.duplicate) {
@@ -66,6 +70,7 @@ export default function ShareScreen() {
             if (collectionId !== INBOX_ID) await moveSave(db, result.id, collectionId);
           }
         } else await saveImage(db, item.uri, { mimeType: item.mimeType, collectionId, pinned });
+        savedItems.current.add(index);
       }
       clearSharedPayloads();
       haptic.success();
