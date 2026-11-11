@@ -2,8 +2,8 @@
 export function redirectSystemPath({ path }: { path: string; initial: boolean }) {
   try {
     if (new URL(path).hostname === 'expo-sharing') return '/share';
-    return path;
   } catch {
-    return '/';
+    // Relative paths ("/focus?scope=new") are not URLs; they are already routes.
   }
+  return path;
 }
