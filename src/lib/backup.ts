@@ -53,7 +53,8 @@ export async function exportBackup(db: SQLiteDatabase, opts: { includeImages: bo
     version: 1,
     exportedAt: new Date().toISOString(),
     collections,
-    saves,
+    // The cached preview file lives only on this phone.
+    saves: saves.map((s) => ({ ...s, thumbnail_local: null })),
     tags,
     saveTags,
     images,
@@ -92,15 +93,29 @@ export async function restoreBackup(db: SQLiteDatabase, text: string): Promise<{
         pending.splice(i, 1);
       }
     }
+    // Links already in the library (saved again under another id) are merged instead of duplicated.
+    const savedUrls = new Map(
+      (await db.getAllAsync<{ id: string; url: string }>("SELECT id, url FROM saves WHERE kind = 'link'")).map((r) => [r.url, r.id]),
+    );
+    const saveIds = new Map<string, string>();
     for (const s of data.saves) {
+      const sameUrl = s.kind === 'link' ? savedUrls.get(s.url) : undefined;
+      if (sameUrl && sameUrl !== s.id) {
+        saveIds.set(s.id, sameUrl);
+        continue;
+      }
+      saveIds.set(s.id, s.id);
+      // Fields added in later versions are missing from older backups.
       const r = await db.runAsync(
         `INSERT OR IGNORE INTO saves (id, kind, url, image_path, title, description, thumbnail, favicon, site_name, note,
-                                      collection_id, pinned, seen, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                      collection_id, pinned, seen, created_at, updated_at, media_width, media_height, article_text, ocr_text)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         s.id, s.kind, s.url, s.image_path, s.title, s.description, s.thumbnail, s.favicon, s.site_name, s.note,
         known.has(s.collection_id) ? s.collection_id : 'inbox', s.pinned, s.seen, s.created_at, s.updated_at,
+        s.media_width ?? null, s.media_height ?? null, s.article_text ?? null, s.ocr_text ?? null,
       );
       saves += r.changes;
+      if (r.changes && s.kind === 'link') savedUrls.set(s.url, s.id);
       if (r.changes && s.image_path && data.images?.[s.image_path]) {
         storeImageBase64(s.image_path, data.images[s.image_path]);
       }
@@ -116,7 +131,7 @@ export async function restoreBackup(db: SQLiteDatabase, text: string): Promise<{
       await db.runAsync(
         `INSERT OR IGNORE INTO save_tags (save_id, tag_id)
          SELECT ?, t.id FROM tags t WHERE t.name = ? COLLATE NOCASE LIMIT 1`,
-        st.save_id,
+        saveIds.get(st.save_id) ?? st.save_id,
         name,
       );
     }
