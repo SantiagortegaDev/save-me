@@ -69,3 +69,13 @@ test('reads Instagram embed pages', () => {
   assert.equal(e.user, 'baker.jo');
   assert.equal(e.caption, 'Sourdough day & more #bread');
 });
+
+test('short and mirror domains map to their platform', () => {
+  assert.equal(detectPlatform('https://spotify.link/AbC123').key, 'spotify');
+  assert.equal(detectPlatform('https://spoti.fi/xyz').key, 'spotify');
+  assert.equal(detectPlatform('https://lnkd.in/eXample').key, 'linkedin');
+  assert.equal(detectPlatform('https://www.youtube-nocookie.com/embed/abc').key, 'youtube');
+  assert.equal(detectPlatform('https://fxtwitter.com/user/status/1').key, 'x');
+  assert.equal(detectPlatform('https://fixupx.com/user/status/1').key, 'x');
+  assert.equal(detectPlatform('https://notspotify.link.example.com/').key, 'web');
+});
