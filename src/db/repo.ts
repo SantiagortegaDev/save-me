@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { newId } from '../lib/id';
-import { escapeLike, likeTerms } from '../lib/searchTerms';
+import { escapeLike, foldAccents, foldSql, likeTerms } from '../lib/searchTerms';
 import { INBOX_ID } from './schema';
 
 export type SaveKind = 'link' | 'image';
@@ -441,13 +441,16 @@ export async function getStats(db: SQLiteDatabase): Promise<LibraryStats> {
 export async function search(db: SQLiteDatabase, query: string) {
   const terms = likeTerms(query);
   if (!terms.length) return { collections: [], saves: [], tags: [] };
-  const q = `%${escapeLike(query.trim())}%`;
-  // Every word has to appear somewhere in the save (title, note, tags, text in images, ...), in any order.
-  const fields = ['s.title', 's.url', 's.description', 's.note', 's.site_name', 's.ocr_text', 's.article_text', 'tag_names'];
-  const wordMatch = terms.map(() => `(${fields.map((f) => `${f} LIKE ? ESCAPE '\\'`).join(' OR ')})`).join(' AND ');
+  const q = `%${escapeLike(foldAccents(query.trim()))}%`;
+  // Every word has to appear somewhere in the save (title, note, tags, text in images, ...), in any order, ignoring accents.
+  const haystack = foldSql(
+    "coalesce(s.title, '') || ' ' || coalesce(s.url, '') || ' ' || coalesce(s.description, '') || ' ' || coalesce(s.note, '') || ' ' || " +
+      "coalesce(s.site_name, '') || ' ' || coalesce(s.ocr_text, '') || ' ' || coalesce(s.article_text, '') || ' ' || coalesce(tag_names, '')",
+  );
+  const wordMatch = terms.map(() => `${haystack} LIKE ? ESCAPE '\\'`).join(' AND ');
   const [collections, saves, tags] = await Promise.all([
     db.getAllAsync<CollectionWithCount>(
-      `${COLLECTION_WITH_COUNT} WHERE c.name LIKE ? ESCAPE '\\' ORDER BY c.name COLLATE NOCASE LIMIT 30`,
+      `${COLLECTION_WITH_COUNT} WHERE ${foldSql('c.name')} LIKE ? ESCAPE '\\' ORDER BY c.name COLLATE NOCASE LIMIT 30`,
       q,
     ),
     db.getAllAsync<Save>(
@@ -457,11 +460,11 @@ export async function search(db: SQLiteDatabase, query: string) {
        ) s
        WHERE ${wordMatch}
        ORDER BY s.created_at DESC LIMIT 100`,
-      ...terms.flatMap((t) => fields.map(() => t)),
+      ...terms,
     ),
     db.getAllAsync<TagWithCount>(
       `SELECT t.*, (SELECT COUNT(*) FROM save_tags st WHERE st.tag_id = t.id) AS save_count
-       FROM tags t WHERE t.name LIKE ? ESCAPE '\\' ORDER BY t.name COLLATE NOCASE LIMIT 30`,
+       FROM tags t WHERE ${foldSql('t.name')} LIKE ? ESCAPE '\\' ORDER BY t.name COLLATE NOCASE LIMIT 30`,
       q,
     ),
   ]);

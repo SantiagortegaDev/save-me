@@ -45,3 +45,10 @@ test('likeTerms splits words, drops tag hashes and escapes wildcards', async () 
   assert.equal(escapeLike('a_b\\c'), 'a\\_b\\\\c');
   assert.deepEqual(likeTerms('   '), []);
 });
+
+test('search folds accents on both sides', async () => {
+  const { foldAccents, foldSql, likeTerms } = await import('../src/lib/searchTerms');
+  assert.equal(foldAccents('Canción AÑO Über'), 'cancion ano uber');
+  assert.deepEqual(likeTerms('Canción'), ['%cancion%']);
+  assert.ok(foldSql('x').includes("replace(x, 'á', 'a')"));
+});
