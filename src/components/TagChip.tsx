@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { haptic } from '../lib/haptics';
 import { brutal, colors, themed } from '../theme';
-import { Text } from './ui';
+import { Text, textOnColor } from './ui';
 
 export const TAG_COLORS = ['#FF7A1A', '#3D7BFF', '#8B5CF6', '#F06EAA', '#FFC21A', '#2FB86A', '#EE4266', '#22B5E8', '#111111', '#B07A4F'];
 
@@ -11,12 +11,6 @@ export function tagColor(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   return TAG_COLORS[h % TAG_COLORS.length];
-}
-
-function textOn(bg: string): string {
-  const n = parseInt(bg.slice(1), 16);
-  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
-  return lum > 150 ? colors.ink : colors.white;
 }
 
 const POINT = 13;
@@ -38,7 +32,7 @@ export function TagChip({
   onLongPress?: () => void;
 }) {
   const bg = tagColor(name);
-  const fg = textOn(bg);
+  const fg = textOnColor(bg);
   const h = size === 'sm' ? 26 : 32;
   return (
     <Pressable

@@ -2,11 +2,11 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { createCollection, updateCollection, type Collection } from '../db/repo';
+import { createCollection, listCollections, updateCollection, type Collection } from '../db/repo';
 import { haptic } from '../lib/haptics';
 import { brutal, collectionColors, collectionIcons, colors, radius, themed } from '../theme';
 import { Sheet } from './Sheet';
-import { Button, Icon, Input, Label, type IconName } from './ui';
+import { Button, Icon, Input, Label, textOnColor, type IconName } from './ui';
 import { Alert } from '../lib/dialog';
 
 type FormProps = {
@@ -39,12 +39,20 @@ function CollectionFormBody({ onClose, editing, parentId, onSaved }: FormProps) 
   const [busy, setBusy] = useState(false);
 
   async function submit() {
+    if (busy) return;
     if (!name.trim()) {
       Alert.alert('Name required', 'Give your collection a name.');
       return;
     }
     setBusy(true);
     try {
+      // Two collections with the same name side by side are hard to tell apart (and for Claude to address).
+      const siblings = await listCollections(db, editing ? editing.parent_id : (parentId ?? null));
+      const clash = siblings.find((c) => c.id !== editing?.id && c.name.trim().toLowerCase() === name.trim().toLowerCase());
+      if (clash) {
+        Alert.alert('Name already used', `There is already a collection called "${clash.name}" here. Pick another name.`);
+        return;
+      }
       if (editing) {
         await updateCollection(db, editing.id, { name, color, icon });
         onSaved?.(editing.id);
@@ -78,14 +86,15 @@ function CollectionFormBody({ onClose, editing, parentId, onSaved }: FormProps) 
         {collectionColors.map((c) => (
           <Pressable
             key={c}
-            accessibilityLabel={`Color ${c}`}
+            accessibilityLabel={`Color ${collectionColors.indexOf(c) + 1}`}
+            accessibilityState={{ selected: color === c }}
             onPress={() => {
               haptic.select();
               setColor(c);
             }}
             style={[styles.swatch, { backgroundColor: c }, color === c && styles.selected]}
           >
-            {color === c ? <Icon name="check" size={18} color={colors.white} /> : null}
+            {color === c ? <Icon name="check" size={18} color={textOnColor(c)} /> : null}
           </Pressable>
         ))}
       </View>
@@ -95,13 +104,14 @@ function CollectionFormBody({ onClose, editing, parentId, onSaved }: FormProps) 
           <Pressable
             key={i}
             accessibilityLabel={`Icon ${i}`}
+            accessibilityState={{ selected: icon === i }}
             onPress={() => {
               haptic.select();
               setIcon(i);
             }}
             style={[styles.iconCell, { backgroundColor: icon === i ? color : colors.surface }, icon === i && styles.selected]}
           >
-            <Icon name={i as IconName} size={18} color={icon === i ? colors.white : colors.text} />
+            <Icon name={i as IconName} size={18} color={icon === i ? textOnColor(color) : colors.text} />
           </Pressable>
         ))}
       </View>

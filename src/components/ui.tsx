@@ -58,6 +58,14 @@ export function contentOn(background: string): string {
     : colors.ink;
 }
 
+// Dark or white content for a hex fill, whichever reads better (e.g. dark on yellow, white on blue).
+export function textOnColor(hex: string): string {
+  const n = parseInt(hex.replace('#', '').slice(0, 6), 16);
+  if (Number.isNaN(n)) return colors.ink;
+  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150 ? colors.ink : colors.white;
+}
+
 export function Button({
   title,
   icon,
