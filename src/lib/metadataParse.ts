@@ -127,13 +127,25 @@ export function parseHtmlMetadata(html: string, pageUrl: string): LinkMetadata {
     ld.image ??
     imageSrc;
 
+  const siteName = clean(meta.get('og:site_name')) ?? hostname(pageUrl);
   return {
-    title,
+    title: withoutSiteSuffix(title, siteName, pageUrl),
     description: clean(meta.get('og:description') ?? meta.get('twitter:description') ?? meta.get('description') ?? ld.description),
     thumbnail: resolveUrl(image ? decodeEntities(image) : null, pageUrl),
     favicon: resolveUrl(favicon ? decodeEntities(favicon) : '/favicon.ico', pageUrl),
-    siteName: clean(meta.get('og:site_name')) ?? hostname(pageUrl),
+    siteName,
   };
+}
+
+// "Bread at home | Kitchen Blog" -> "Bread at home": cards already show the site, and the suffix eats the space.
+export function withoutSiteSuffix(title: string, siteName: string | null, pageUrl: string): string {
+  const names = [siteName, hostname(pageUrl), hostname(pageUrl).split('.')[0]].filter((n): n is string => !!n && n.length >= 2);
+  for (const name of names) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const m = title.match(new RegExp(`^(.{8,}?)\\s+[|\\-–—·•:»]{1,2}\\s+${escaped}\\s*$`, 'i'));
+    if (m) return m[1].trim();
+  }
+  return title;
 }
 
 // Instagram's public embed page (instagram.com/p/<code>/embed/captioned/).

@@ -36,3 +36,11 @@ test('uses hostname when there is no title at all', () => {
 test('decodes numeric entities', () => {
   assert.equal(decodeEntities('caf&#233; &#x1F600;'), 'café 😀');
 });
+
+test('site name suffixes are dropped from titles', async () => {
+  const { withoutSiteSuffix } = await import('../src/lib/metadataParse');
+  assert.equal(withoutSiteSuffix('Receta de pan casero | El Blog de Cocina', 'El Blog de Cocina', 'https://blog.example.es/x'), 'Receta de pan casero');
+  assert.equal(withoutSiteSuffix('How to bake – Example', null, 'https://www.example.com/a'), 'How to bake');
+  assert.equal(withoutSiteSuffix('Pan - Blog', 'Blog', 'https://b.es'), 'Pan - Blog'); // too short to cut
+  assert.equal(withoutSiteSuffix('Rock | Paper | Scissors', 'Other', 'https://x.com'), 'Rock | Paper | Scissors');
+});
