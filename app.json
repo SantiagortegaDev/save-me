@@ -2,7 +2,7 @@
   "expo": {
     "name": "SaveMe",
     "slug": "saveme",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "saveme",
@@ -31,7 +31,7 @@
       "permissions": [
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "versionCode": 10204
+      "versionCode": 10205
     },
     "web": {
       "output": "single",
