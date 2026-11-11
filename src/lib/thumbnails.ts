@@ -22,22 +22,21 @@ export function thumbnailUri(name: string | null | undefined): string | null {
 }
 
 // Resizes and recompresses a local image. Returns the stored file name and the image's size.
+// Decoding is downsampled to MAX_WIDTH, so large photos never load at full resolution; the aspect ratio
+// (all the size is used for) is preserved.
 async function compressInto(sourceUri: string, name: string): Promise<{ name: string; width: number; height: number }> {
-  const original = await ImageManipulator.manipulate(sourceUri).renderAsync();
-  const context = ImageManipulator.manipulate(sourceUri);
-  if (original.width > MAX_WIDTH) context.resize({ width: MAX_WIDTH });
-  const image = await context.renderAsync();
+  const image = await ImageManipulator.manipulate(sourceUri, { maxWidth: MAX_WIDTH }).renderAsync();
   const saved = await image.saveAsync({ compress: QUALITY, format: SaveFormat.JPEG });
   const target = new File(thumbsDir(), name);
   if (target.exists) target.delete();
   new File(saved.uri).moveSync(target);
-  return { name, width: original.width, height: original.height };
+  return { name, width: image.width, height: image.height };
 }
 
-// Natural size of a local image, used to lay out "fit" cards for saved images.
+// Proportions of a local image, used to lay out "fit" cards for saved images. Decoded small: only the ratio matters.
 export async function imageSize(uri: string): Promise<{ width: number; height: number } | null> {
   try {
-    const ref = await ImageManipulator.manipulate(uri).renderAsync();
+    const ref = await ImageManipulator.manipulate(uri, { maxWidth: 256, maxHeight: 256 }).renderAsync();
     return { width: ref.width, height: ref.height };
   } catch {
     return null;
