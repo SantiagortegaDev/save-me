@@ -40,6 +40,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history and tags, for the release notes.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -65,6 +68,15 @@ jobs:
           name: SaveMe-apk
           path: dist/*.apk
           if-no-files-found: error
+      - name: Write release notes
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+        run: |
+          # Commit subjects since the previous release; the app shows these in its update dialog.
+          CURRENT="${{ inputs.release_tag || github.ref_name }}"
+          PREV=$(git tag --list 'v*' --sort=-v:refname | grep -vx "$CURRENT" | head -n 1)
+          RANGE=${PREV:+$PREV..}HEAD
+          { echo "## What's new"; git log "$RANGE" --no-merges --pretty='- %s'; } > dist/notes.md
+          cat dist/notes.md
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
@@ -74,4 +86,5 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: SaveMe ${{ inputs.release_tag || github.ref_name }}
           files: dist/*.apk
+          body_path: dist/notes.md
           generate_release_notes: true

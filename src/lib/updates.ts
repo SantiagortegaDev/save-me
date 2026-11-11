@@ -50,10 +50,19 @@ export async function installRelease(release: Release): Promise<void> {
   }
   if (progress) return;
   setProgress({ version: release.version, fraction: 0 });
+  Alert.alert('Downloading update', `SaveMe ${release.version} is downloading. The installer opens when it is ready; you can follow the progress in Settings.`);
   try {
     const dir = new Directory(Paths.cache, 'updates');
     dir.create({ idempotent: true, intermediates: true });
     const target = new File(dir, `saveme-${release.version}.apk`);
+    // Installers of earlier versions are no longer needed (each is ~50 MB).
+    for (const entry of dir.list()) {
+      try {
+        if (entry instanceof File && entry.name !== target.name) entry.delete();
+      } catch {
+        // Not worth failing the update over.
+      }
+    }
     const file = await File.downloadFileAsync(release.apkUrl, target, {
       idempotent: true,
       onProgress: ({ bytesWritten, totalBytes }) =>

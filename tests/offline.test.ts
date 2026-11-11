@@ -68,3 +68,7 @@ test('parseRelease finds the APK and skips prereleases', () => {
   assert.equal(shortNotes(release!.notes), 'What is new\n• Faster search\n• Docs');
   assert.equal(parseRelease({ tag_name: 'v2.0.0', prerelease: true }), null);
 });
+
+test('shortNotes drops the generated changelog link', () => {
+  assert.equal(shortNotes("## What's new\n- Fix search\n\n**Full Changelog**: https://github.com/o/r/compare/v1...v2"), "What's new\n• Fix search");
+});

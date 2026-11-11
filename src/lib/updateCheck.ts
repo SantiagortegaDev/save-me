@@ -54,6 +54,7 @@ export function shortNotes(notes: string, maxLines = 8): string {
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
         .trim(),
     )
-    .filter(Boolean);
+    // GitHub's auto-generated footer is only a link.
+    .filter((l) => l && !/^full changelog/i.test(l));
   return lines.length > maxLines ? `${lines.slice(0, maxLines).join('\n')}\n…` : lines.join('\n');
 }
