@@ -11,6 +11,7 @@ import { SettingsGroup, SettingsRow } from '../components/SettingsRow';
 import { Card, Icon, Label, Text } from '../components/ui';
 import { getStats, wipeLibrary } from '../db/repo';
 import { deleteAllImages } from '../lib/images';
+import { deleteAllThumbnails } from '../lib/thumbnails';
 import { cancelReminders, requestReminderPermission, scheduleDailyReminder, sendTestReminder } from '../lib/reminders';
 import { useSettings } from '../lib/settings';
 import { appVersion, checkForUpdates, subscribeUpdateProgress, type UpdateProgress } from '../lib/updates';
@@ -78,6 +79,7 @@ export default function SettingsScreen() {
         onPress: async () => {
           await wipeLibrary(db);
           deleteAllImages();
+          deleteAllThumbnails();
           await cancelReminders();
           Alert.alert('Data deleted', 'Your library is empty now.');
         },

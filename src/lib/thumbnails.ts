@@ -56,6 +56,16 @@ export async function cacheThumbnail(db: SQLiteDatabase, saveId: string, remoteU
   }
 }
 
+// Used by "Delete all data": previews go right away, not at the next launch's cleanup.
+export function deleteAllThumbnails(): void {
+  try {
+    const dir = new Directory(Paths.document, 'thumbs');
+    if (dir.exists) dir.delete();
+  } catch (error) {
+    console.warn('[thumbnails] delete all failed', error);
+  }
+}
+
 export function deleteThumbnail(saveId: string): void {
   const file = new File(Paths.document, 'thumbs', `${saveId}.jpg`);
   if (file.exists) file.delete();

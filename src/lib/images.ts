@@ -52,6 +52,10 @@ export function deleteImages(names: (string | null | undefined)[]): void {
 }
 
 export function deleteAllImages(): void {
-  const dir = new Directory(Paths.document, 'images');
-  if (dir.exists) dir.delete();
+  try {
+    const dir = new Directory(Paths.document, 'images');
+    if (dir.exists) dir.delete();
+  } catch (error) {
+    console.warn('[images] delete all failed', error);
+  }
 }
