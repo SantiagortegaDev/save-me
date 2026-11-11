@@ -107,7 +107,8 @@
         {
           "color": "#161616"
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "reactCompiler": false
