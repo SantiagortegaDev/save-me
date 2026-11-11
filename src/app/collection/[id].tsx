@@ -157,7 +157,11 @@ export default function CollectionScreen() {
             {path.map((p, i) => (
               <View key={p.id} style={styles.crumb}>
                 {i > 0 ? <Icon name="chevron-right" size={14} color={colors.inkMuted} /> : null}
-                <Pressable onPress={() => (p.id === collectionId ? null : router.push(`/collection/${p.id}`))}>
+                <Pressable
+                  onPress={() => (p.id === collectionId ? null : router.push(`/collection/${p.id}`))}
+                  accessibilityRole="link"
+                  accessibilityState={{ selected: p.id === collectionId }}
+                >
                   <Text size="sm" weight={p.id === collectionId ? 'bold' : 'medium'} color={p.id === collectionId ? colors.ink : colors.inkMuted}>
                     {p.name}
                   </Text>

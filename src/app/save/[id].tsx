@@ -194,7 +194,7 @@ function SaveDetail({ save }: { save: Save }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.paper }}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }} keyboardShouldPersistTaps="handled">
-        <Pressable onPress={() => (save.kind === 'image' ? setZoom(true) : open())} accessibilityLabel="Open" disabled={!preview}>
+        <Pressable onPress={() => (save.kind === 'image' ? setZoom(true) : open())} accessibilityRole="button" accessibilityLabel={save.kind === 'image' ? 'View image full screen' : 'Open link'} disabled={!preview}>
           <SaveMedia save={save} fillRatio={heroRatio} minRatio={0.75} style={styles.hero} />
         </Pressable>
         <View style={styles.heroOverlay}>
