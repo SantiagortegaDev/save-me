@@ -21,6 +21,15 @@ code{background:#fff;border:2px solid #111;border-radius:6px;padding:2px 6px}</s
 <p>Add it in Claude as a custom connector, or in Claude Code with <code>claude mcp add --transport http saveme &lt;your link&gt;</code>.</p>
 <p>Source: <a href="https://github.com/santiagortegadev/save-me">github.com/santiagortegadev/save-me</a></p>`;
 
+// A malformed escape ("%E0%A4%A") would otherwise throw and answer 500 instead of 401.
+function safeDecode(text: string): string {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return '';
+  }
+}
+
 function withCors(res: Response): Response {
   const out = new Response(res.body, res);
   for (const [k, v] of Object.entries(CORS)) out.headers.set(k, v);
@@ -40,13 +49,14 @@ export default {
     // MCP endpoint: token in the path (/mcp/<token>) or as a bearer token on /mcp.
     if (parts[0] === 'mcp') {
       if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-      const token = parts[1] ?? request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
-      const parsed = parseMcpToken(decodeURIComponent(token));
+      const raw = parts[1] ?? request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
+      const token = safeDecode(raw);
+      const parsed = parseMcpToken(token);
       if (!parsed) {
         return withCors(Response.json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Missing or malformed SaveMe token.' } }, { status: 401 }));
       }
       const headers = new Headers(request.headers);
-      headers.set('x-saveme-token', decodeURIComponent(token));
+      headers.set('x-saveme-token', token);
       const stub = env.SPACES.get(env.SPACES.idFromName(parsed.spaceId));
       const res = await stub.fetch(new Request(new URL('/mcp', url), { method: request.method, headers, body: request.body }));
       return withCors(res);
