@@ -12,9 +12,10 @@ on:
         required: false
         default: ''
 
+# New pushes cancel an older build of the same branch, but never a release build.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.release_tag || 'build' }}
+  cancel-in-progress: ${{ !inputs.release_tag }}
 
 jobs:
   check:
