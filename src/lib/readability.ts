@@ -23,6 +23,23 @@ function removeTags(html: string, tags: string[]): string {
   return out;
 }
 
+// Pages often have several <article> elements (related-post cards next to the story); the one with the
+// most paragraph text is the story. Nested articles are cut at the inner end, which still ranks the story first.
+function mainArticle(html: string): string | null {
+  const re = /<article\b[^>]*>([\s\S]*?)<\/article>/gi;
+  let best: string | null = null;
+  let bestScore = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    const score = (m[1].match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) ?? []).reduce((n, para) => n + stripTags(para).length, 0);
+    if (score > bestScore) {
+      best = m[1];
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 // Content of the first element of the given tag, or null.
 function firstElement(html: string, tag: string): string | null {
   const m = html.match(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*)<\\/${tag}>`, 'i'));
@@ -40,7 +57,7 @@ function bodyByHint(html: string): string | null {
 
 export function extractArticle(html: string): Block[] {
   const clean = removeTags(html, DROP_TAGS);
-  const scope = firstElement(clean, 'article') ?? bodyByHint(clean) ?? firstElement(clean, 'main') ?? firstElement(clean, 'body') ?? clean;
+  const scope = mainArticle(clean) ?? bodyByHint(clean) ?? firstElement(clean, 'main') ?? firstElement(clean, 'body') ?? clean;
   const blocks: Block[] = [];
   const re = /<(h[1-4]|p|blockquote|li)\b[^>]*>([\s\S]*?)<\/\1>/gi;
   let m: RegExpExecArray | null;

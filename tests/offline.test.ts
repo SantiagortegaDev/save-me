@@ -72,3 +72,12 @@ test('parseRelease finds the APK and skips prereleases', () => {
 test('shortNotes drops the generated changelog link', () => {
   assert.equal(shortNotes("## What's new\n- Fix search\n\n**Full Changelog**: https://github.com/o/r/compare/v1...v2"), "What's new\n• Fix search");
 });
+
+test('extractArticle picks the story, not related-post cards', () => {
+  const p = (t: string) => `<p>${t} ${'Real body sentence with enough words to count as content. '.repeat(4)}</p>`;
+  const html = `<body><main><article><h1>Main story</h1>${p('One.')}${p('Two.')}${p('Three.')}</article>
+    <section><article><h3>Other post A</h3><p>Teaser for another post that is long enough to pass the filter ok.</p></article></section></main></body>`;
+  const blocks = extractArticle(html);
+  assert.equal(blocks[0].text, 'Main story');
+  assert.ok(!blocks.some((b) => b.text.includes('Other post') || b.text.includes('Teaser')));
+});
