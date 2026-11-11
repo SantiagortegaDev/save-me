@@ -114,3 +114,13 @@ test('Pocket HTML dates and numeric entities in titles', () => {
   assert.equal(links[0].title, "It's 'good'");
   assert.deepEqual(links[0].tags, ['a', 'b']);
 });
+
+test('CSV export neutralizes spreadsheet formulas and round-trips', () => {
+  const csv = toCsv([{ url: 'https://example.com/a', title: '=HYPERLINK("http://evil")', folder: 'Inbox', tags: [], note: '+1 idea', createdAt: 0 }]);
+  assert.ok(csv.startsWith('﻿url,'));
+  assert.ok(csv.includes(`"'=HYPERLINK(""http://evil"")"`));
+  assert.ok(csv.includes("'+1 idea"));
+  const back = parseCsvBookmarks(csv);
+  assert.equal(back[0].title, '=HYPERLINK("http://evil")');
+  assert.equal(back[0].note, '+1 idea');
+});

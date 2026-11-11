@@ -10,11 +10,14 @@ export type ExportRow = {
 };
 
 function csvField(value: string): string {
-  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  // Titles come from web pages: one starting with = + - @ would run as a formula in a spreadsheet.
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 export function toCsv(rows: ExportRow[]): string {
-  const header = 'url,title,folder,tags,note,created';
+  // The byte-order mark makes Excel read the file as UTF-8, so accents show correctly.
+  const header = '\uFEFFurl,title,folder,tags,note,created';
   const lines = rows.map((r) =>
     [r.url, r.title, r.folder, r.tags.join(','), r.note ?? '', new Date(r.createdAt).toISOString()].map(csvField).join(','),
   );

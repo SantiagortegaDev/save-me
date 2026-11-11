@@ -96,6 +96,11 @@ const HEADER_ALIASES: Record<keyof Omit<ImportedLink, 'tags'> | 'tags', string[]
   createdAt: ['created', 'created_at', 'createdat', 'date', 'time_added', 'added', 'timestamp'],
 };
 
+// Undoes the leading quote our CSV export adds in front of values that look like spreadsheet formulas.
+function unescapeFormula(value: string): string {
+  return /^'[=+\-@]/.test(value) ? value.slice(1) : value;
+}
+
 // Handles Pocket, Raindrop, Instapaper, Omnivore and generic CSV exports.
 export function parseCsvBookmarks(text: string): ImportedLink[] {
   const rows = parseCsv(text);
@@ -127,10 +132,10 @@ export function parseCsvBookmarks(text: string): ImportedLink[] {
     if (!url) continue;
     out.push({
       url,
-      title: (titleIdx >= 0 ? r[titleIdx]?.trim() : '') || '',
+      title: unescapeFormula((titleIdx >= 0 ? r[titleIdx]?.trim() : '') || ''),
       folder: folderIdx >= 0 ? folderOf(r[folderIdx]) : null,
       tags: tagsIdx >= 0 ? splitTags(r[tagsIdx]) : [],
-      note: (noteIdx >= 0 ? r[noteIdx]?.trim() : '') || null,
+      note: unescapeFormula((noteIdx >= 0 ? r[noteIdx]?.trim() : '') || '') || null,
       createdAt: createdIdx >= 0 ? toTimestamp(r[createdIdx]) : null,
     });
   }
