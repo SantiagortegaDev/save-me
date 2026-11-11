@@ -26,3 +26,14 @@ test('resolveUrl handles relative paths', () => {
   assert.equal(resolveUrl('/img.png', 'https://a.com/b/c'), 'https://a.com/img.png');
   assert.equal(resolveUrl(null, 'https://a.com'), null);
 });
+
+test('normalizeUrl strips share-sheet tracking parameters', () => {
+  assert.equal(normalizeUrl('https://www.instagram.com/reel/C1abc/?igsh=MTc4MmM1YmI2Ng=='), 'https://www.instagram.com/reel/C1abc/');
+  assert.equal(normalizeUrl('https://youtu.be/dQw4w9WgXcQ?si=AbC123&t=42'), 'https://youtu.be/dQw4w9WgXcQ?t=42');
+  assert.equal(normalizeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ&feature=share'), 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  assert.equal(normalizeUrl('https://x.com/user/status/1?s=20&t=abc'), 'https://x.com/user/status/1');
+  assert.equal(normalizeUrl('https://example.com/a?utm_source=x&id=7&fbclid=1'), 'https://example.com/a?id=7');
+  // Parameters that matter on other sites stay.
+  assert.equal(normalizeUrl('https://example.com/search?s=bread&t=1'), 'https://example.com/search?s=bread&t=1');
+  assert.equal(normalizeUrl('https://www.tiktok.com/@a/video/1?_r=1&_t=8abc&lang=es'), 'https://www.tiktok.com/@a/video/1?lang=es');
+});

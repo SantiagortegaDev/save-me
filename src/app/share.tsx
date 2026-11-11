@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionPicker } from '../components/CollectionPicker';
 import { Button, Icon, Text } from '../components/ui';
+import { moveSave } from '../db/repo';
 import { INBOX_ID } from '../db/schema';
 import { haptic } from '../lib/haptics';
 import { saveImage, saveLink } from '../lib/saving';
@@ -30,7 +31,7 @@ export default function ShareScreen() {
   const [collectionId, setCollectionId] = useState(INBOX_ID);
   const [pinned, setPinned] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState<'saved' | 'duplicate' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const items = useMemo<Incoming[]>(() => {
@@ -55,14 +56,21 @@ export default function ShareScreen() {
     setBusy(true);
     setError(null);
     try {
+      let duplicates = 0;
       for (const item of items) {
-        if (item.kind === 'link') await saveLink(db, item.url, { collectionId, pinned });
-        else await saveImage(db, item.uri, { mimeType: item.mimeType, collectionId, pinned });
+        if (item.kind === 'link') {
+          const result = await saveLink(db, item.url, { collectionId, pinned });
+          if (result.duplicate) {
+            duplicates++;
+            // Already saved: file it where the user just chose, unless that is the default Inbox.
+            if (collectionId !== INBOX_ID) await moveSave(db, result.id, collectionId);
+          }
+        } else await saveImage(db, item.uri, { mimeType: item.mimeType, collectionId, pinned });
       }
       clearSharedPayloads();
       haptic.success();
-      setDone(true);
-      setTimeout(close, 900);
+      setDone(duplicates === items.length ? 'duplicate' : 'saved');
+      setTimeout(close, duplicates === items.length ? 1400 : 900);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -91,7 +99,7 @@ export default function ShareScreen() {
               <Icon name="check" size={36} color={colors.ink} />
             </View>
             <Text weight="bold" size="lg">
-              Saved!
+              {done === 'duplicate' ? 'Already in your library' : 'Saved!'}
             </Text>
           </View>
         ) : waiting ? (
