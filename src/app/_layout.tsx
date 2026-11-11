@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { getStats } from '../db/repo';
+import { getStats, subscribe } from '../db/repo';
 import { resumeMcpSync, stopMcpSync } from '../lib/mcpSync';
 import { maintainThumbnails } from '../lib/thumbnails';
 import { checkForUpdates } from '../lib/updates';
@@ -57,11 +57,28 @@ function AppShell() {
   }, [ready, settings.onboarded]);
 
   // Keep the daily reminder's text in sync with the current backlog.
+  // Also after saving or opening things, so the reminder neither nags about saves already opened nor misses new ones.
   useEffect(() => {
     if (!ready || !settings.reminders) return;
-    getStats(db)
-      .then((s) => scheduleDailyReminder(s.unseen, settings.reminderHour))
-      .catch((error) => console.warn('[reminders]', error));
+    let lastCount = -1;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const sync = () =>
+      getStats(db)
+        .then((s) => {
+          if (s.unseen === lastCount) return;
+          lastCount = s.unseen;
+          return scheduleDailyReminder(s.unseen, settings.reminderHour);
+        })
+        .catch((error) => console.warn('[reminders]', error));
+    void sync();
+    const unsubscribe = subscribe(() => {
+      clearTimeout(timer);
+      timer = setTimeout(sync, 2000);
+    });
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, [db, ready, settings.reminders, settings.reminderHour]);
 
   useEffect(() => {
