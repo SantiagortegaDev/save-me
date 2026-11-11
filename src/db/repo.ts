@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { newId } from '../lib/id';
+import { escapeLike, likeTerms } from '../lib/searchTerms';
 import { INBOX_ID } from './schema';
 
 export type SaveKind = 'link' | 'image';
@@ -438,21 +439,25 @@ export async function getStats(db: SQLiteDatabase): Promise<LibraryStats> {
 }
 
 export async function search(db: SQLiteDatabase, query: string) {
-  const q = `%${query.trim().replace(/[%_]/g, (m) => `\\${m}`)}%`;
+  const terms = likeTerms(query);
+  if (!terms.length) return { collections: [], saves: [], tags: [] };
+  const q = `%${escapeLike(query.trim())}%`;
+  // Every word has to appear somewhere in the save (title, note, tags, text in images, ...), in any order.
+  const fields = ['s.title', 's.url', 's.description', 's.note', 's.site_name', 's.ocr_text', 's.article_text', 'tag_names'];
+  const wordMatch = terms.map(() => `(${fields.map((f) => `${f} LIKE ? ESCAPE '\\'`).join(' OR ')})`).join(' AND ');
   const [collections, saves, tags] = await Promise.all([
     db.getAllAsync<CollectionWithCount>(
       `${COLLECTION_WITH_COUNT} WHERE c.name LIKE ? ESCAPE '\\' ORDER BY c.name COLLATE NOCASE LIMIT 30`,
       q,
     ),
     db.getAllAsync<Save>(
-      `SELECT DISTINCT s.* FROM saves s
-       LEFT JOIN save_tags st ON st.save_id = s.id
-       LEFT JOIN tags t ON t.id = st.tag_id
-       WHERE s.title LIKE ?1 ESCAPE '\\' OR s.url LIKE ?1 ESCAPE '\\' OR s.description LIKE ?1 ESCAPE '\\'
-          OR s.note LIKE ?1 ESCAPE '\\' OR s.site_name LIKE ?1 ESCAPE '\\' OR t.name LIKE ?1 ESCAPE '\\'
-          OR s.ocr_text LIKE ?1 ESCAPE '\\' OR s.article_text LIKE ?1 ESCAPE '\\'
+      `SELECT * FROM (
+         SELECT s.*, (SELECT group_concat(t.name, ' ') FROM save_tags st JOIN tags t ON t.id = st.tag_id WHERE st.save_id = s.id) AS tag_names
+         FROM saves s
+       ) s
+       WHERE ${wordMatch}
        ORDER BY s.created_at DESC LIMIT 100`,
-      q,
+      ...terms.flatMap((t) => fields.map(() => t)),
     ),
     db.getAllAsync<TagWithCount>(
       `SELECT t.*, (SELECT COUNT(*) FROM save_tags st WHERE st.tag_id = t.id) AS save_count

@@ -37,3 +37,11 @@ test('normalizeUrl strips share-sheet tracking parameters', () => {
   assert.equal(normalizeUrl('https://example.com/search?s=bread&t=1'), 'https://example.com/search?s=bread&t=1');
   assert.equal(normalizeUrl('https://www.tiktok.com/@a/video/1?_r=1&_t=8abc&lang=es'), 'https://www.tiktok.com/@a/video/1?lang=es');
 });
+
+test('likeTerms splits words, drops tag hashes and escapes wildcards', async () => {
+  const { likeTerms, escapeLike } = await import('../src/lib/searchTerms');
+  assert.deepEqual(likeTerms('  pan  Receta pan '), ['%pan%', '%receta%']);
+  assert.deepEqual(likeTerms('#recipes 100%'), ['%recipes%', '%100\\%%']);
+  assert.equal(escapeLike('a_b\\c'), 'a\\_b\\\\c');
+  assert.deepEqual(likeTerms('   '), []);
+});
