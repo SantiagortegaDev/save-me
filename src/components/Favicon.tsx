@@ -7,11 +7,12 @@ import { Icon, type IconName } from './ui';
 
 // Site icon in a small bordered tile; falls back to a vector icon when the site has none.
 export function Favicon({ uri, size = 18, fallback = 'globe' }: { uri?: string | null; size?: number; fallback?: IconName }) {
-  const [failed, setFailed] = useState(false);
+  // Remembers which URL failed, so a new icon (e.g. after refreshing the preview) is tried again.
+  const [failedUri, setFailedUri] = useState<string | null>(null);
   return (
     <View style={[styles.tile, { width: size, height: size }]}>
-      {uri && !failed ? (
-        <Image source={{ uri }} style={{ width: size - 4, height: size - 4 }} onError={() => setFailed(true)} />
+      {uri && uri !== failedUri ? (
+        <Image source={{ uri }} style={{ width: size - 4, height: size - 4 }} onError={() => setFailedUri(uri)} />
       ) : (
         <Icon name={fallback} size={size * 0.6} />
       )}
