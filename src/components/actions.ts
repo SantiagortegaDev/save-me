@@ -73,13 +73,13 @@ export async function shareCollection(db: SQLiteDatabase, c: Collection) {
   await Share.share({ title: c.name, message: `${c.name}\n\n${body}` });
 }
 
-export function collectionMenu(db: SQLiteDatabase, c: Collection, onEdit: () => void) {
+export function collectionMenu(db: SQLiteDatabase, c: Collection, onEdit: () => void, onDeleted?: () => void) {
   const options: Parameters<typeof Alert.alert>[2] = [
     { text: 'Edit', onPress: onEdit },
     { text: c.pinned ? 'Unpin' : 'Pin to top', onPress: () => setCollectionPinned(db, c.id, !c.pinned) },
     { text: 'Share links', onPress: () => shareCollection(db, c) },
   ];
-  if (!c.is_inbox) options.push({ text: 'Delete', style: 'destructive', onPress: () => confirmDeleteCollection(db, c) });
+  if (!c.is_inbox) options.push({ text: 'Delete', style: 'destructive', onPress: () => confirmDeleteCollection(db, c, onDeleted) });
   options.push({ text: 'Cancel', style: 'cancel' });
   Alert.alert(c.name, undefined, options);
 }

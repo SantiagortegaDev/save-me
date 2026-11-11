@@ -138,7 +138,16 @@ export default function CollectionScreen() {
         title={title}
         right={
           collection ? (
-            <IconButton icon="more-horizontal" accessibilityLabel="Collection options" onPress={() => collectionMenu(db, collection, () => setEditing(collection))} />
+            <IconButton
+              icon="more-horizontal"
+              accessibilityLabel="Collection options"
+              onPress={() =>
+                // Deleting the collection on screen leaves to its parent (or home) instead of a "not found" page.
+                collectionMenu(db, collection, () => setEditing(collection), () =>
+                  collection.parent_id ? router.replace(`/collection/${collection.parent_id}`) : router.canGoBack() ? router.back() : router.replace('/'),
+                )
+              }
+            />
           ) : null
         }
       />
