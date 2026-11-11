@@ -1,4 +1,5 @@
 // Pure parsers for bookmark exports from other apps. Unit-tested in tests/.
+import { decodeEntities } from './metadataParse';
 import { normalizeUrl } from './url';
 
 export type ImportedLink = {
@@ -31,6 +32,18 @@ function splitTags(value: string | undefined | null): string[] {
     .filter(Boolean);
 }
 
+// Spreadsheet apps in many locales (Spanish Excel included) separate fields with ";" instead of ",".
+function detectDelimiter(src: string): ',' | ';' | '\t' {
+  // Quoted fields and URLs (which may contain ";" in their query) do not count.
+  const firstLine = src
+    .split(/\r?\n/, 1)[0]
+    .replace(/"[^"]*"/g, '')
+    .replace(/https?:\/\/[^\s,\t]*/gi, '');
+  const count = (c: string) => firstLine.split(c).length - 1;
+  const best = ([',', ';', '\t'] as const).reduce((a, b) => (count(b) > count(a) ? b : a));
+  return count(best) > 0 ? best : ',';
+}
+
 // RFC 4180-ish CSV parser supporting quoted fields, escaped quotes and newlines in quotes.
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -38,6 +51,7 @@ export function parseCsv(text: string): string[][] {
   let field = '';
   let quoted = false;
   const src = text.replace(/^﻿/, '');
+  const delimiter = detectDelimiter(src);
   for (let i = 0; i < src.length; i++) {
     const ch = src[i];
     if (quoted) {
@@ -54,7 +68,7 @@ export function parseCsv(text: string): string[][] {
       continue;
     }
     if (ch === '"' && field === '') quoted = true;
-    else if (ch === ',') {
+    else if (ch === delimiter) {
       row.push(field);
       field = '';
     } else if (ch === '\n' || ch === '\r') {
@@ -101,6 +115,12 @@ export function parseCsvBookmarks(text: string): ImportedLink[] {
   const tagsIdx = col('tags');
   const noteIdx = col('note');
   const createdIdx = col('createdAt');
+  // Instapaper (recognized by its "Selection" column) puts its built-in lists in the folder column.
+  const instapaper = header.includes('selection');
+  const folderOf = (value: string | undefined) => {
+    const name = value?.trim() || null;
+    return instapaper && name && /^(unread|archive|starred)$/i.test(name) ? null : name;
+  };
   const out: ImportedLink[] = [];
   for (const r of body) {
     const url = normalizeUrl(r[urlIdx] ?? '');
@@ -108,7 +128,7 @@ export function parseCsvBookmarks(text: string): ImportedLink[] {
     out.push({
       url,
       title: (titleIdx >= 0 ? r[titleIdx]?.trim() : '') || '',
-      folder: (folderIdx >= 0 ? r[folderIdx]?.trim() : '') || null,
+      folder: folderIdx >= 0 ? folderOf(r[folderIdx]) : null,
       tags: tagsIdx >= 0 ? splitTags(r[tagsIdx]) : [],
       note: (noteIdx >= 0 ? r[noteIdx]?.trim() : '') || null,
       createdAt: createdIdx >= 0 ? toTimestamp(r[createdIdx]) : null,
@@ -118,13 +138,7 @@ export function parseCsvBookmarks(text: string): ImportedLink[] {
 }
 
 function decodeHtml(text: string): string {
-  return text
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .trim();
+  return decodeEntities(text).trim();
 }
 
 // Netscape bookmark file format (Chrome, Firefox, Safari, Edge, Pinboard, Raindrop HTML export).
@@ -154,7 +168,8 @@ export function parseNetscapeHtml(html: string): ImportedLink[] {
       const href = attrs.match(/href\s*=\s*"([^"]*)"/i)?.[1] ?? attrs.match(/href\s*=\s*'([^']*)'/i)?.[1];
       const url = href ? normalizeUrl(decodeHtml(href)) : null;
       if (!url) continue;
-      const added = attrs.match(/add_date\s*=\s*"(\d+)"/i)?.[1];
+      // Browsers write ADD_DATE; Pocket's HTML export writes time_added.
+      const added = attrs.match(/(?:add_date|time_added)\s*=\s*"(\d+)"/i)?.[1];
       const tags = attrs.match(/tags\s*=\s*"([^"]*)"/i)?.[1];
       const folder = [...folders].reverse().find((f) => f && !/^(bookmarks( bar| menu| toolbar)?|other bookmarks)$/i.test(f));
       out.push({

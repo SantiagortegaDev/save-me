@@ -97,3 +97,20 @@ test('exports round-trip through the importers', () => {
   assert.equal(fromHtml[1].folder, 'Inbox');
   assert.equal(fromHtml[0].createdAt, 1700000000000);
 });
+
+test('CSV with semicolons (Spanish Excel) and Instapaper lists', () => {
+  const es = parseCsvBookmarks('Título;URL;Carpeta\n"Pan; casero";https://example.com/pan;Recetas\n');
+  assert.equal(es.length, 1);
+  assert.equal(es[0].url, 'https://example.com/pan');
+  const insta = parseCsvBookmarks('URL,Title,Selection,Folder,Timestamp\nhttps://a.com,A,,Unread,1700000000\nhttps://b.com,B,,Cooking,1700000000\n');
+  assert.deepEqual(insta.map((l) => l.folder), [null, 'Cooking']);
+  // A bare URL list whose query contains ";" stays in one piece.
+  assert.equal(parseCsvBookmarks('https://example.com/a?x=1;y=2\n')[0].url, 'https://example.com/a?x=1;y=2');
+});
+
+test('Pocket HTML dates and numeric entities in titles', () => {
+  const links = parseNetscapeHtml('<ul><li><a href="https://example.com/x" time_added="1700000000" tags="a,b">It&#039;s &#x27;good&#x27;</a></li></ul>');
+  assert.equal(links[0].createdAt, 1700000000000);
+  assert.equal(links[0].title, "It's 'good'");
+  assert.deepEqual(links[0].tags, ['a', 'b']);
+});
