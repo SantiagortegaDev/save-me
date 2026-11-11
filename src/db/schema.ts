@@ -3,7 +3,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 export const DATABASE_NAME = 'saveme.db';
 export const INBOX_ID = 'inbox';
 
-const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 3;
 
 const SCHEMA_V1 = `
   CREATE TABLE IF NOT EXISTS collections (
@@ -58,6 +58,15 @@ const SCHEMA_V1 = `
   CREATE INDEX IF NOT EXISTS idx_collections_parent ON collections(parent_id);
 `;
 
+// Adds only the columns that are missing, so a migration interrupted halfway (app killed during an update)
+// does not fail with "duplicate column" on the next launch.
+async function addColumns(db: SQLiteDatabase, table: string, columns: Record<string, string>): Promise<void> {
+  const existing = new Set((await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`)).map((c) => c.name));
+  for (const [name, type] of Object.entries(columns)) {
+    if (!existing.has(name)) await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`);
+  }
+}
+
 export async function migrate(db: SQLiteDatabase): Promise<void> {
   await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
@@ -78,19 +87,14 @@ export async function migrate(db: SQLiteDatabase): Promise<void> {
 
   if (current < 2) {
     // Compressed local copy of the preview image and the media's natural size (for "fit" cards).
-    await db.execAsync(`
-      ALTER TABLE saves ADD COLUMN thumbnail_local TEXT;
-      ALTER TABLE saves ADD COLUMN media_width INTEGER;
-      ALTER TABLE saves ADD COLUMN media_height INTEGER;
-    `);
+    await addColumns(db, 'saves', { thumbnail_local: 'TEXT', media_width: 'INTEGER', media_height: 'INTEGER' });
+    await db.execAsync('PRAGMA user_version = 2');
   }
 
   if (current < 3) {
     // Readable article text for offline reading, and text recognized in saved images (searchable).
-    await db.execAsync(`
-      ALTER TABLE saves ADD COLUMN article_text TEXT;
-      ALTER TABLE saves ADD COLUMN ocr_text TEXT;
-    `);
+    await addColumns(db, 'saves', { article_text: 'TEXT', ocr_text: 'TEXT' });
+    await db.execAsync('PRAGMA user_version = 3');
   }
 
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
