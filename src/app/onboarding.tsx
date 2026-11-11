@@ -95,7 +95,7 @@ const styles = themed(() =>
     root: { flex: 1, backgroundColor: colors.paper, paddingHorizontal: spacing.lg },
     top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24 },
     dots: { flexDirection: 'row', gap: 6 },
-    dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: colors.ink, backgroundColor: colors.surface },
+    dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: colors.inkMuted, backgroundColor: colors.surface },
     dotActive: { width: 26, backgroundColor: colors.text },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
     art: {
