@@ -94,6 +94,7 @@ test('edits apply to the mirror and queue ops for the phone', () => {
   assert.equal(saved.data.saved.collection.name, 'Recipes');
   assert.deepEqual(saved.data.saved.tags, ['later']);
   assert.equal(call('save_link', { url: 'https://example.org/read' }).data.already_saved, true);
+  assert.equal(call('save_link', { url: 'https://example.org/read?utm_source=claude&fbclid=x' }).data.already_saved, true);
 
   assert.equal(call('move_saves', { save_ids: ['s2', 's3'], collection: 'Pasta' }).data.moved, 2);
   assert.equal(call('move_saves', { save_ids: ['nope'], collection: 'Pasta' }).isError, true);

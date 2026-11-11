@@ -178,6 +178,14 @@ async function applyOp(db: SQLiteDatabase, op: Op, after: { images: string[]; re
   switch (op.type) {
     case 'create_save': {
       const s = op.save;
+      // Saved on the phone after Claude last saw the library: keep one copy and add Claude's tags to it.
+      const existing = await db.getFirstAsync<{ id: string }>("SELECT id FROM saves WHERE kind = 'link' AND url = ? AND id != ?", s.url, s.id);
+      if (existing) {
+        for (const t of op.tags) {
+          await db.runAsync('INSERT OR IGNORE INTO save_tags (save_id, tag_id) VALUES (?, ?)', existing.id, await tagId(db, t));
+        }
+        return;
+      }
       const collectionId = (await collectionExists(db, s.collection_id)) ? s.collection_id : INBOX_ID;
       const res = await db.runAsync(
         `INSERT OR IGNORE INTO saves (id, kind, url, title, note, collection_id, pinned, seen, created_at, updated_at)

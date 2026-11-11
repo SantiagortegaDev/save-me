@@ -1,5 +1,6 @@
 // MCP tools exposed to Claude. Read tools work in both modes; write tools only when the app grants "edit".
 import type { Op, Permission } from '../../src/shared/sync';
+import { normalizeUrl as cleanUrl } from '../../src/lib/url';
 import { INBOX_ID } from '../../src/shared/sync';
 import {
   applyOp,
@@ -102,16 +103,11 @@ function resolveCollection(db: Db, ref: string): string {
   throw new InputError(`Collection "${ref}" not found. Call list_collections to see ids.`);
 }
 
+// Same cleaning as the app (tracking parameters removed), so duplicates are detected on both sides.
 function normalizeUrl(input: string): string {
-  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : `https://${input}`;
-  let url: URL;
-  try {
-    url = new URL(candidate);
-  } catch {
-    throw new InputError('Invalid URL.');
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new InputError('Only http and https links can be saved.');
-  return url.toString();
+  const url = cleanUrl(input);
+  if (!url) throw new InputError('Invalid URL. Only http and https links can be saved.');
+  return url;
 }
 
 function commit(ctx: ToolContext, op: Op) {
