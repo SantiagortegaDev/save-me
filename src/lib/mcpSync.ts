@@ -115,7 +115,16 @@ export async function disableMcp(db: SQLiteDatabase): Promise<void> {
   if (state) {
     // Apply anything Claude changed before wiping the server copy.
     await syncNow(db).catch(() => {});
-    await api(state, '', 'DELETE').catch((error) => console.warn('[mcp] delete failed', error));
+    try {
+      await api(state, '', 'DELETE');
+    } catch (error) {
+      // 401/404: the space is already gone. Anything else (offline, server down): keep the credentials so the
+      // copy can still be deleted later; forgetting them would leave it on the server with a working link.
+      if (!/Server error (401|404)\b/.test(String(error))) {
+        startMcpSync(db);
+        throw new Error('Could not delete the copy on the server, so Claude is still connected. Check your connection and try again.');
+      }
+    }
   }
   await saveMcpState(db, null);
 }
