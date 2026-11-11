@@ -11,6 +11,7 @@ import { Button, EmptyState, IconButton, Text } from '../../components/ui';
 import { getSave } from '../../db/repo';
 import { Alert } from '../../lib/dialog';
 import { saveArticleText } from '../../lib/offline';
+import { useSettings } from '../../lib/settings';
 import { detectPlatform } from '../../lib/platform';
 import { parseBlocks, readingMinutes } from '../../lib/readability';
 import { useTheme } from '../../lib/theme';
@@ -25,7 +26,8 @@ export default function ReaderScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: save, loading } = useQuery(() => getSave(db, id), [db, id]);
-  const [size, setSize] = useState(1);
+  const { settings, update } = useSettings();
+  const size = Math.min(Math.max(settings.readerSize, 0), SIZES.length - 1);
   const [fetching, setFetching] = useState(false);
 
   if (!save) {
@@ -55,7 +57,7 @@ export default function ReaderScreen() {
       <ScreenHeader
         title="Reader"
         right={
-          <IconButton icon="type" accessibilityLabel="Text size" size={38} onPress={() => setSize((s) => (s + 1) % SIZES.length)} />
+          <IconButton icon="type" accessibilityLabel="Text size" size={38} onPress={() => update({ readerSize: (size + 1) % SIZES.length })} />
         }
       />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}>
@@ -82,10 +84,12 @@ export default function ReaderScreen() {
               </Text>
             ) : b.type === 'quote' ? (
               <View key={i} style={styles.quote}>
-                <Text style={[styles.body, { fontSize, lineHeight: fontSize * 1.6, fontStyle: 'italic' }]}>{b.text}</Text>
+                <Text selectable style={[styles.body, { fontSize, lineHeight: fontSize * 1.6, fontStyle: 'italic' }]}>
+                  {b.text}
+                </Text>
               </View>
             ) : (
-              <Text key={i} style={[styles.body, { fontSize, lineHeight: fontSize * 1.6 }]}>
+              <Text key={i} selectable style={[styles.body, { fontSize, lineHeight: fontSize * 1.6 }]}>
                 {b.type === 'li' ? `•  ${b.text}` : b.text}
               </Text>
             ),

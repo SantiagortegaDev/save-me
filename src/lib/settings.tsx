@@ -16,9 +16,11 @@ export type Settings = {
   offlineText: boolean;
   lastUpdateCheck: number;
   skippedVersion: string | null;
+  // Index into the reader's text sizes.
+  readerSize: number;
 };
 
-const DEFAULTS: Settings = { haptics: true, reminders: false, reminderHour: 19, onboarded: false, collectionSort: 'oldest', imageFit: 'fill', theme: 'system', offlineText: true, lastUpdateCheck: 0, skippedVersion: null };
+const DEFAULTS: Settings = { haptics: true, reminders: false, reminderHour: 19, onboarded: false, collectionSort: 'oldest', imageFit: 'fill', theme: 'system', offlineText: true, lastUpdateCheck: 0, skippedVersion: null, readerSize: 1 };
 
 // Latest settings for non-React code (saving, sync, update checks).
 let snapshot: Settings = DEFAULTS;
