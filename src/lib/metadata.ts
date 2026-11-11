@@ -4,7 +4,7 @@
 import { detectPlatform, fallbackTitle, type Platform } from './platform';
 import { hostname, resolveUrl } from './url';
 import { isWeakTitle, parseHtmlMetadata, parseInstagramEmbed, type LinkMetadata } from './metadataParse';
-import { readHtml } from './htmlText';
+import { deviceAcceptLanguage, readHtml } from './htmlText';
 
 export type { LinkMetadata };
 
@@ -133,7 +133,7 @@ async function fromInstagramEmbed(url: string): Promise<Partial<LinkMetadata> | 
 async function fromHtml(url: string, userAgent: string): Promise<(Partial<LinkMetadata> & { finalUrl: string }) | null> {
   try {
     const res = await fetchWithTimeout(url, {
-      headers: { 'User-Agent': userAgent, Accept: 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.8' },
+      headers: { 'User-Agent': userAgent, Accept: 'text/html,application/xhtml+xml', 'Accept-Language': deviceAcceptLanguage() },
     });
     const type = res.headers.get('content-type') ?? '';
     if (type.startsWith('image/')) return { thumbnail: url, finalUrl: url };

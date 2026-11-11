@@ -17,3 +17,13 @@ test('UTF-8 stays the default', () => {
   const bytes = new TextEncoder().encode('<title>Canción 🍞</title>');
   assert.equal(decodeHtmlBytes(bytes, 'text/html'), '<title>Canción 🍞</title>');
 });
+
+test('acceptLanguage follows the phone language with English as fallback', async () => {
+  const { acceptLanguage } = await import('../src/lib/htmlText');
+  assert.equal(acceptLanguage('es-ES'), 'es-ES,es;q=0.9,en;q=0.8');
+  assert.equal(acceptLanguage('es_MX'), 'es-MX,es;q=0.9,en;q=0.8');
+  assert.equal(acceptLanguage('es'), 'es,en;q=0.8');
+  assert.equal(acceptLanguage('en-US'), 'en-US,en;q=0.9');
+  assert.equal(acceptLanguage('de-DE-u-ca-gregory'), 'de-DE,de;q=0.9,en;q=0.8');
+  assert.equal(acceptLanguage(undefined), 'en-US,en;q=0.8');
+});

@@ -73,3 +73,21 @@ export async function readHtml(res: Response): Promise<string> {
     return '';
   }
 }
+
+// Accept-Language for the phone's language, so multilingual sites answer with the title the user can read.
+// English stays as a fallback. "es-ES" -> "es-ES,es;q=0.9,en;q=0.8".
+export function acceptLanguage(locale: string | undefined | null): string {
+  const tag = (locale ?? '').replace('_', '-').split('-u-')[0];
+  const lang = tag.split('-')[0]?.toLowerCase();
+  if (!lang || !/^[a-z]{2,3}$/.test(lang)) return 'en-US,en;q=0.8';
+  if (lang === 'en') return tag === 'en' ? 'en' : `${tag},en;q=0.9`;
+  return tag === lang ? `${lang},en;q=0.8` : `${tag},${lang};q=0.9,en;q=0.8`;
+}
+
+export function deviceAcceptLanguage(): string {
+  try {
+    return acceptLanguage(Intl.DateTimeFormat().resolvedOptions().locale);
+  } catch {
+    return acceptLanguage(null);
+  }
+}
