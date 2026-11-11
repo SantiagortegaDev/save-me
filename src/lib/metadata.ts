@@ -4,6 +4,7 @@
 import { detectPlatform, fallbackTitle, type Platform } from './platform';
 import { hostname, resolveUrl } from './url';
 import { isWeakTitle, parseHtmlMetadata, parseInstagramEmbed, type LinkMetadata } from './metadataParse';
+import { readHtml } from './htmlText';
 
 export type { LinkMetadata };
 
@@ -116,7 +117,7 @@ async function fromInstagramEmbed(url: string): Promise<Partial<LinkMetadata> | 
       headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html' },
     });
     if (!res.ok) return null;
-    const embed = parseInstagramEmbed(await res.text());
+    const embed = parseInstagramEmbed(await readHtml(res));
     if (!embed.image && !embed.caption) return null;
     const caption = embed.caption;
     return {
@@ -138,7 +139,7 @@ async function fromHtml(url: string, userAgent: string): Promise<(Partial<LinkMe
     if (type.startsWith('image/')) return { thumbnail: url, finalUrl: url };
     if (!res.ok || !type.includes('html')) return null;
     const finalUrl = res.url || url;
-    const meta = parseHtmlMetadata(await res.text(), finalUrl);
+    const meta = parseHtmlMetadata(await readHtml(res), finalUrl);
     return { ...meta, thumbnail: resolveUrl(meta.thumbnail, finalUrl), finalUrl };
   } catch {
     return null;

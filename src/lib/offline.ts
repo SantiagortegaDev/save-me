@@ -4,6 +4,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 import { updateSave } from '../db/repo';
+import { readHtml } from './htmlText';
 import { imageUri } from './images';
 import { detectPlatform } from './platform';
 import { extractArticle, serializeBlocks } from './readability';
@@ -23,7 +24,7 @@ export async function fetchArticleText(url: string): Promise<string | null> {
     const res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html' }, signal: controller.signal });
     if (res.status >= 500) return null;
     if (!res.ok || !(res.headers.get('content-type') ?? '').includes('html')) return '';
-    return serializeBlocks(extractArticle(await res.text()));
+    return serializeBlocks(extractArticle(await readHtml(res)));
   } catch {
     return null;
   } finally {
