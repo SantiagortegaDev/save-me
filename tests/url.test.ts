@@ -60,3 +60,11 @@ test('linkFromText accepts bare links and links inside shared text', async () =>
   assert.equal(linkFromText('just words'), null);
   assert.equal(linkFromText(''), null);
 });
+
+test('cleanTagName strips hashes and spaces and rejects empty tags', async () => {
+  const { cleanTagName, MAX_TAG_LENGTH } = await import('../src/lib/tagName');
+  assert.equal(cleanTagName('  ##Comida   rápida '), 'Comida rápida');
+  assert.equal(cleanTagName('#'), '');
+  assert.equal(cleanTagName(' # # '), '');
+  assert.equal(cleanTagName('x'.repeat(60)).length, MAX_TAG_LENGTH);
+});

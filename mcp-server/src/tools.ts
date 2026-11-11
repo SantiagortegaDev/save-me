@@ -1,5 +1,6 @@
 // MCP tools exposed to Claude. Read tools work in both modes; write tools only when the app grants "edit".
 import type { Op, Permission } from '../../src/shared/sync';
+import { cleanTagName } from '../../src/lib/tagName';
 import { normalizeUrl as cleanUrl } from '../../src/lib/url';
 import { INBOX_ID } from '../../src/shared/sync';
 import {
@@ -81,8 +82,9 @@ function strList(args: Record<string, unknown>, key: string, opts: { required?: 
 
 function tagNames(args: Record<string, unknown>, key: string): string[] {
   return strList(args, key).map((t) => {
-    const clean = t.replace(/^#/, '').trim();
-    if (!clean || clean.length > 40) throw new InputError('Tags must be 1-40 characters.');
+    // Same normalization as the app, so "##Recetas" and "recetas" end up as one tag.
+    const clean = cleanTagName(t);
+    if (!clean) throw new InputError('Tags must contain at least one letter or number (max 40 characters).');
     return clean;
   });
 }

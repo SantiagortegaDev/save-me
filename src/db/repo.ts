@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { newId } from '../lib/id';
 import { escapeLike, foldAccents, foldSql, likeTerms } from '../lib/searchTerms';
+import { cleanTagName } from '../lib/tagName';
 import { INBOX_ID } from './schema';
 
 export type SaveKind = 'link' | 'image';
@@ -398,7 +399,8 @@ export function listTagsForSave(db: SQLiteDatabase, saveId: string) {
 }
 
 export async function ensureTag(db: SQLiteDatabase, name: string): Promise<string> {
-  const clean = name.trim().replace(/^#/, '');
+  const clean = cleanTagName(name);
+  if (!clean) throw new Error('Tag names need at least one letter or number.');
   const existing = await db.getFirstAsync<Tag>('SELECT * FROM tags WHERE name = ? COLLATE NOCASE', clean);
   if (existing) return existing.id;
   const id = newId();

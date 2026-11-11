@@ -7,6 +7,7 @@ import { collectionColors } from '../theme';
 import { toCsv, toNetscapeHtml, type ExportRow } from './exportFormat';
 import { readImageBase64, storeImageBase64 } from './images';
 import { detectAndParse } from './importParse';
+import { cleanTagName } from './tagName';
 
 const BACKUP_FORMAT = 'saveme-backup';
 
@@ -189,7 +190,8 @@ export async function importBookmarks(
         },
         { silent: true },
       );
-      for (const tag of link.tags) await addTagToSave(db, id, tag, { silent: true });
+      // Tags like "#" alone are skipped instead of failing the whole import.
+      for (const tag of link.tags) if (cleanTagName(tag)) await addTagToSave(db, id, tag, { silent: true });
       existingUrls.add(link.url);
       imported++;
     }
