@@ -18,6 +18,10 @@ const TIPS = [
   { title: 'Long-press for actions', body: 'Long-press any collection or save to pin, move, share or delete it.' },
   { title: 'Focus Mode', body: 'Review saves one card at a time. Swipe to move on, tap Open to read now, shuffle for variety.' },
   { title: 'Sub-collections', body: 'Open a collection and tap "+ New" under Sub-collections to nest folders as deep as you like.' },
+  { title: 'Select several at once', body: 'In a collection tap "Select" (or long-press a save and choose "Select multiple") to move, tag, pin or delete many saves together.' },
+  { title: 'Search inside images and articles', body: 'Text in your saved screenshots and the text of saved articles is searchable too, even offline. Accents and word order do not matter.' },
+  { title: 'Read offline', body: 'Open a saved article and tap "Read offline" for a clean copy stored on your phone. Tap the T button to change the text size.' },
+  { title: 'Dark mode', body: 'Settings → Appearance: follow your phone, or keep SaveMe always light or always dark.' },
   { title: 'Bring your old bookmarks', body: 'Settings → Backup & import accepts Pocket, Raindrop, Instapaper and browser exports.' },
 ];
 
