@@ -46,6 +46,13 @@ export function normalizeUrl(input: string): string | null {
   }
 }
 
+// What the user typed or pasted: a bare link, or text with a link in it ("Watch this https://vm.tiktok.com/x").
+export function linkFromText(text: string | null | undefined): string | null {
+  if (!text?.trim()) return null;
+  const found = extractUrl(text);
+  return found ? normalizeUrl(found) : normalizeUrl(text);
+}
+
 export function hostname(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, '');

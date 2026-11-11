@@ -52,3 +52,11 @@ test('search folds accents on both sides', async () => {
   assert.deepEqual(likeTerms('Canción'), ['%cancion%']);
   assert.ok(foldSql('x').includes("replace(x, 'á', 'a')"));
 });
+
+test('linkFromText accepts bare links and links inside shared text', async () => {
+  const { linkFromText } = await import('../src/lib/url');
+  assert.equal(linkFromText('Mira este video https://vm.tiktok.com/ZM123/ en TikTok'), 'https://vm.tiktok.com/ZM123/');
+  assert.equal(linkFromText('example.com/a'), 'https://example.com/a');
+  assert.equal(linkFromText('just words'), null);
+  assert.equal(linkFromText(''), null);
+});

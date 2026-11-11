@@ -18,7 +18,7 @@ import { getStats, listCollections, listRecentSaves, type Collection, type Colle
 import { haptic } from '../lib/haptics';
 import { saveLink } from '../lib/saving';
 import { useSettings } from '../lib/settings';
-import { extractUrl, normalizeUrl } from '../lib/url';
+import { linkFromText } from '../lib/url';
 import { useQuery } from '../lib/useQuery';
 import { brutal, colors, fonts, fontSize, radius, spacing, themed } from '../theme';
 import { useTheme } from '../lib/theme';
@@ -34,22 +34,28 @@ function QuickSave({ onOpenSheet }: { onOpenSheet: () => void }) {
 
   async function paste() {
     const text = await Clipboard.getStringAsync();
-    const url = extractUrl(text) ?? normalizeUrl(text);
+    const url = linkFromText(text);
     if (url) setValue(url);
     else Alert.alert('Nothing to paste', 'Copy a link first, then tap paste.');
   }
 
   async function save() {
-    if (!normalizeUrl(value)) {
+    const url = linkFromText(value);
+    if (!url) {
       Alert.alert('Invalid link', 'Please enter a valid http or https link.');
       return;
     }
     setBusy(true);
     try {
-      const res = await saveLink(db, value);
+      const res = await saveLink(db, url);
       haptic.success();
       setValue('');
-      if (res.duplicate) Alert.alert('Already saved', 'This link is already in your library.');
+      if (res.duplicate) {
+        Alert.alert('Already saved', 'This link is already in your library.', [
+          { text: 'OK' },
+          { text: 'Open', onPress: () => router.push(`/save/${res.id}`) },
+        ]);
+      }
     } catch (error) {
       Alert.alert('Save failed', error instanceof Error ? error.message : String(error));
     } finally {

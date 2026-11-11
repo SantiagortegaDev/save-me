@@ -8,7 +8,7 @@ import { StyleSheet, Switch, View } from 'react-native';
 import { INBOX_ID } from '../db/schema';
 import { haptic } from '../lib/haptics';
 import { saveImage, saveLink } from '../lib/saving';
-import { extractUrl, normalizeUrl } from '../lib/url';
+import { extractUrl, linkFromText } from '../lib/url';
 import { colors, spacing, themed } from '../theme';
 import { CollectionPicker } from './CollectionPicker';
 import { Sheet } from './Sheet';
@@ -46,7 +46,7 @@ function AddSaveForm({ onClose, defaultCollectionId }: Props) {
 
   async function pasteLink() {
     const text = await Clipboard.getStringAsync();
-    const found = extractUrl(text) ?? normalizeUrl(text);
+    const found = linkFromText(text);
     if (!found) {
       Alert.alert('Nothing to paste', 'Copy a link first, then tap Paste.');
       return;
@@ -55,13 +55,14 @@ function AddSaveForm({ onClose, defaultCollectionId }: Props) {
   }
 
   async function submitLink() {
-    if (!normalizeUrl(url)) {
+    const link = linkFromText(url);
+    if (!link) {
       Alert.alert('Invalid link', 'Please enter a valid http or https link.');
       return;
     }
     setBusy(true);
     try {
-      const res = await saveLink(db, url, { collectionId, pinned });
+      const res = await saveLink(db, link, { collectionId, pinned });
       haptic.success();
       onClose();
       if (res.duplicate) {
