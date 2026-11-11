@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, PanResponder, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -27,6 +27,12 @@ function shuffle<T>(list: T[]): T[] {
     [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
+}
+
+// Focus can be the first screen (opened from the reminder), with nothing to go back to.
+function exit() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
 }
 
 function pad(n: number) {
@@ -107,11 +113,16 @@ export default function FocusScreen() {
     if (current && !current.seen) void markSeen(db, current.id);
   }, [db, current]);
 
+  // Ignores taps while a card is flying out, so a double tap does not skip a card.
+  const animating = useRef(false);
   const advance = useCallback(
     (direction: 1 | -1) => {
+      if (animating.current) return;
+      animating.current = true;
       Animated.timing(position, { toValue: { x: direction * width * 1.4, y: 0 }, duration: 200, useNativeDriver: false }).start(() => {
         position.setValue({ x: 0, y: 0 });
         setIndex((i) => i + 1);
+        animating.current = false;
       });
     },
     [position, width],
@@ -129,6 +140,8 @@ export default function FocusScreen() {
 
   const responder = useMemo(
     () =>
+      // advance() reads its ref only inside the release handler, not during render.
+      // eslint-disable-next-line react-hooks/refs
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8,
         onPanResponderMove: Animated.event([null, { dx: position.x, dy: position.y }], { useNativeDriver: false }),
@@ -182,7 +195,7 @@ export default function FocusScreen() {
           >
             <Icon name="shuffle" size={18} color={colors.white} />
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Exit Focus Mode" hitSlop={8} onPress={() => router.back()} style={styles.darkButton}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Exit Focus Mode" hitSlop={8} onPress={exit} style={styles.darkButton}>
             <Icon name="x" size={20} color={colors.white} />
           </Pressable>
         </View>
@@ -211,7 +224,7 @@ export default function FocusScreen() {
             <Text color="#BDBDBD" style={{ textAlign: 'center' }}>
               {scope === 'new' ? 'You have opened every save. New ones will show up here.' : 'Save something first.'}
             </Text>
-            <Button title="Back" variant="primary" onPress={() => router.back()} />
+            <Button title="Back" variant="primary" onPress={exit} />
           </View>
         ) : done ? (
           <View style={styles.message}>
@@ -224,7 +237,7 @@ export default function FocusScreen() {
             </Text>
             <View style={{ gap: spacing.sm, alignSelf: 'stretch' }}>
               <Button title="Back to last card" variant="plain" onPress={() => setIndex(total - 1)} />
-              <Button title="Exit" onPress={() => router.back()} />
+              <Button title="Exit" onPress={exit} />
             </View>
           </View>
         ) : (
@@ -249,7 +262,8 @@ export default function FocusScreen() {
             <Icon name="arrow-left" size={20} color={colors.white} />
           </Pressable>
           <Button
-            title={current.kind === 'link' ? 'Open link  ↗' : 'View  ↗'}
+            title={current.kind === 'link' ? 'Open link' : 'View'}
+            icon="arrow-up-right"
             size="lg"
             onPress={openCurrent}
             style={{ flex: 1 }}

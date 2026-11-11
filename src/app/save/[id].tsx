@@ -163,7 +163,7 @@ function SaveDetail({ save }: { save: Save }) {
     { icon: 'share', label: 'Share', onPress: () => Share.share({ message: save.url }), show: save.kind === 'link' },
     { icon: 'folder', label: 'Move', onPress: () => setMoving(true), show: true },
     { icon: 'refresh-cw', label: refreshing ? '…' : 'Refresh', onPress: refresh, show: save.kind === 'link' },
-    { icon: 'trash-2', label: 'Delete', onPress: () => confirmDeleteSave(db, save, () => router.back()), danger: true, show: true },
+    { icon: 'trash-2', label: 'Delete', onPress: () => confirmDeleteSave(db, save, () => (router.canGoBack() ? router.back() : router.replace('/'))), danger: true, show: true },
   ];
 
   return (
