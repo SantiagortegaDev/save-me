@@ -1,6 +1,6 @@
 {
   "name": "saveme",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/sora": "^0.4.2",
