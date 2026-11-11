@@ -8,6 +8,7 @@ import { StyleSheet, Switch, View } from 'react-native';
 import { INBOX_ID } from '../db/schema';
 import { haptic } from '../lib/haptics';
 import { saveImage, saveLink } from '../lib/saving';
+import { imageTitle } from '../lib/imageTitle';
 import { extractUrl, linkFromText } from '../lib/url';
 import { colors, spacing, themed } from '../theme';
 import { CollectionPicker } from './CollectionPicker';
@@ -88,7 +89,7 @@ function AddSaveForm({ onClose, defaultCollectionId }: Props) {
     setBusy(true);
     try {
       for (const asset of result.assets) {
-        await saveImage(db, asset.uri, { mimeType: asset.mimeType, title: asset.fileName ?? undefined, collectionId, pinned });
+        await saveImage(db, asset.uri, { mimeType: asset.mimeType, title: imageTitle(asset.fileName), collectionId, pinned });
       }
       haptic.success();
       onClose();
