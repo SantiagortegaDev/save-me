@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -112,6 +112,30 @@ function SaveDetail({ save }: { save: Save }) {
   const { data: collection } = useQuery(() => getCollection(db, save.collection_id), [db, save.collection_id]);
   const [title, setTitle] = useState(save.title);
   const [note, setNote] = useState(save.note ?? '');
+  // Notes save as you type and when leaving, not only on blur: going back with the keyboard open may skip blur.
+  const pendingNote = useRef<string | null>(null);
+  const saveNote = useCallback(
+    (text: string) => {
+      pendingNote.current = null;
+      void updateSave(db, save.id, { note: text.trim() || null });
+    },
+    [db, save.id],
+  );
+  useEffect(() => {
+    if (note === (save.note ?? '')) return;
+    pendingNote.current = note;
+    const timer = setTimeout(() => saveNote(note), 800);
+    return () => clearTimeout(timer);
+  }, [note, save.note, saveNote]);
+  // A title being edited when the screen closes is kept too.
+  const pendingTitle = useRef<string | null>(null);
+  useEffect(
+    () => () => {
+      if (pendingNote.current !== null) saveNote(pendingNote.current);
+      if (pendingTitle.current?.trim()) void updateSave(db, save.id, { title: pendingTitle.current.trim() });
+    },
+    [db, save.id, saveNote],
+  );
   const [editingTitle, setEditingTitle] = useState(false);
   const [tagging, setTagging] = useState(false);
   const [moving, setMoving] = useState(false);
@@ -136,6 +160,7 @@ function SaveDetail({ save }: { save: Save }) {
   }
 
   async function saveTitle() {
+    pendingTitle.current = null;
     setEditingTitle(false);
     if (title.trim() && title !== save.title) await updateSave(db, save.id, { title: title.trim() });
   }
@@ -195,7 +220,14 @@ function SaveDetail({ save }: { save: Save }) {
 
           <View style={styles.titleRow}>
             {editingTitle ? (
-              <Input value={title} onChangeText={setTitle} autoFocus onBlur={saveTitle} onSubmitEditing={saveTitle} returnKeyType="done" style={{ flex: 1 }} />
+              <Input
+                value={title}
+                onChangeText={(text) => {
+                  setTitle(text);
+                  pendingTitle.current = text === save.title ? null : text;
+                }}
+                autoFocus
+                onBlur={saveTitle} onSubmitEditing={saveTitle} returnKeyType="done" style={{ flex: 1 }} />
             ) : (
               <Text weight="heavy" size="xl" style={{ flex: 1, lineHeight: 28 }}>
                 {save.title || save.url}
@@ -351,7 +383,7 @@ function SaveDetail({ save }: { save: Save }) {
             value={note}
             onChangeText={setNote}
             placeholder="Why did you save this? Write your notes here…"
-            onBlur={() => note !== (save.note ?? '') && updateSave(db, save.id, { note: note.trim() || null })}
+            onBlur={() => note !== (save.note ?? '') && saveNote(note)}
             style={styles.notes}
           />
         </View>
