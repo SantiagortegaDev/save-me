@@ -1,11 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { createSave, findSaveByUrl, setSavePinned, updateSave } from '../db/repo';
+import { createSave, findSaveByUrl, notifyChange, setSavePinned, updateSave } from '../db/repo';
 import { imageUri, storeImage } from './images';
 import { cacheThumbnail, imageSize } from './thumbnails';
 import { recognizeImageText, saveArticleText } from './offline';
 import { currentSettings } from './settings';
 import { fallbackMetadata, fetchMetadata } from './metadata';
+import { isWeakTitle, tidySocialTitle } from './metadataParse';
+import { detectPlatform, fallbackTitle } from './platform';
 import { hostname, normalizeUrl } from './url';
 
 export type SaveResult = { id: string; duplicate: boolean };
@@ -81,4 +83,42 @@ export async function saveImage(
   });
   void recognizeImageText(db, id, name);
   return { id, duplicate: false };
+}
+
+let maintainingLinks = false;
+
+// Run at startup: cleans tracking parameters out of links saved by older versions (so later shares of the same
+// post are recognized as duplicates) and retries the preview of saves stuck with a generic title.
+export async function maintainLinks(db: SQLiteDatabase): Promise<void> {
+  if (maintainingLinks) return;
+  maintainingLinks = true;
+  try {
+    const links = await db.getAllAsync<{ id: string; url: string; title: string }>("SELECT id, url, title FROM saves WHERE kind = 'link'");
+    const taken = new Set(links.map((l) => l.url));
+    let changed = false;
+    for (const link of links) {
+      const clean = normalizeUrl(link.url);
+      if (!clean || clean === link.url || taken.has(clean)) continue;
+      await db.runAsync('UPDATE saves SET url = ? WHERE id = ?', clean, link.id);
+      taken.add(clean);
+      link.url = clean;
+      changed = true;
+    }
+    // 'Name on Instagram: "caption…"' titles from older versions become the caption itself.
+    for (const link of links) {
+      if (detectPlatform(link.url).key === 'web') continue;
+      const tidy = tidySocialTitle(link.title);
+      if (tidy === link.title) continue;
+      await db.runAsync('UPDATE saves SET title = ? WHERE id = ?', tidy, link.id);
+      link.title = tidy;
+      changed = true;
+    }
+    if (changed) notifyChange();
+    const generic = links.filter((l) => isWeakTitle(l.title, l.url) || l.title === fallbackTitle(l.url)).slice(0, 15);
+    for (const link of generic) await refreshMetadata(db, link.id, link.url);
+  } catch (error) {
+    console.warn('[saving] link maintenance failed', error);
+  } finally {
+    maintainingLinks = false;
+  }
 }

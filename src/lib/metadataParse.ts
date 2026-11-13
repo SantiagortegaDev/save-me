@@ -51,12 +51,14 @@ function clean(value: string | null | undefined): string | null {
 const PLATFORM_ONLY = /^(instagram|threads|facebook|reddit|tiktok|x|twitter|pinterest|amazon(\.com)?|linkedin|medium|github|youtube)$/i;
 const BLOCKED_PAGE = /^(log ?in|sign ?in|sign ?up|error\b|access denied|just a moment|attention required|robot check|are you a robot|page not found|security check|404\b|503\b)/i;
 const LOGIN_SUFFIX = /[•|·-]\s*(log ?in|sign ?in|sign ?up)\s*$/i;
+// Generic page titles served instead of the post's own (TikTok's short links, for instance).
+const GENERIC_PAGE = /^(tiktok\s*[-–|]\s*make your day|make your day|instagram photos and videos|youtube video|watch on youtube)$/i;
 
 export function isWeakTitle(title: string | null | undefined, pageUrl: string): boolean {
   const t = title?.trim();
   if (!t) return true;
   if (t.toLowerCase() === hostname(pageUrl).toLowerCase()) return true;
-  return PLATFORM_ONLY.test(t) || BLOCKED_PAGE.test(t) || LOGIN_SUFFIX.test(t);
+  return PLATFORM_ONLY.test(t) || BLOCKED_PAGE.test(t) || LOGIN_SUFFIX.test(t) || GENERIC_PAGE.test(t);
 }
 
 type JsonLd = { headline?: unknown; name?: unknown; description?: unknown; image?: unknown; thumbnailUrl?: unknown };
@@ -160,4 +162,18 @@ export function parseInstagramEmbed(html: string): { image: string | null; capti
         .trim()
     : null;
   return { image: src ? decodeEntities(src) : null, caption: caption || null, user: user ? decodeEntities(user).trim() : null };
+}
+
+// 'Max Johnson on Instagram: "Stop vibe coding..."' -> 'Stop vibe coding...': the card already shows the
+// platform, and the author is kept in the description. Long captions are cut at a word boundary.
+export function tidySocialTitle(title: string, maxLength = 120): string {
+  const m = title.match(/^(.{1,80}?) on (?:Instagram|Threads|Facebook|TikTok)\s*[:：]\s*["“](.+?)["”]?\s*$/s);
+  let out = m ? m[2].trim() : title;
+  if (!out) return title;
+  if (out.length > maxLength) {
+    const cut = out.slice(0, maxLength);
+    const space = cut.lastIndexOf(' ');
+    out = `${(space > maxLength * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:!?-]+$/, '')}…`;
+  }
+  return out;
 }

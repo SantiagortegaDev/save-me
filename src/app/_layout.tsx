@@ -1,6 +1,7 @@
 import { Sora_400Regular, Sora_500Medium, Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold, useFonts } from '@expo-google-fonts/sora';
 import * as Notifications from 'expo-notifications';
-import { router, Stack } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
+import { useIncomingShare } from 'expo-sharing';
 import * as SplashScreen from 'expo-splash-screen';
 import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { getStats, subscribe } from '../db/repo';
 import { resumeMcpSync, stopMcpSync } from '../lib/mcpSync';
+import { maintainLinks } from '../lib/saving';
 import { maintainThumbnails } from '../lib/thumbnails';
 import { checkForUpdates } from '../lib/updates';
 import { maintainOfflineContent } from '../lib/offline';
@@ -18,6 +20,7 @@ import { scheduleDailyReminder } from '../lib/reminders';
 import { SettingsProvider, useSettings } from '../lib/settings';
 import { ThemeProvider, useTheme } from '../lib/theme';
 import { DialogHost } from '../lib/dialog';
+import { isShareHandled, shareSignature } from '../lib/shareState';
 import { colors } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -25,6 +28,26 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 function openFromNotification(response: Notifications.NotificationResponse | null) {
   const url = response?.notification.request.content.data?.url;
   if (typeof url === 'string') router.push(url as never);
+}
+
+// Opens the save sheet whenever something new is shared while SaveMe is already running. The system link
+// that normally does this is sometimes not delivered (warm start), which left users on the home screen.
+function ShareWatcher() {
+  const db = useSQLiteContext();
+  const pathname = usePathname();
+  const { sharedPayloads } = useIncomingShare();
+  const signature = shareSignature(sharedPayloads);
+  useEffect(() => {
+    if (!signature || pathname === '/share') return;
+    let cancelled = false;
+    isShareHandled(db, signature).then((handled) => {
+      if (!handled && !cancelled) router.push('/share');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [db, signature, pathname]);
+  return null;
 }
 
 function AppShell() {
@@ -43,7 +66,9 @@ function AppShell() {
 
   useEffect(() => {
     if (!ready || Platform.OS === 'web') return;
-    void maintainThumbnails(db).then(() => maintainOfflineContent(db, { articles: settings.offlineText }));
+    void maintainLinks(db)
+      .then(() => maintainThumbnails(db))
+      .then(() => maintainOfflineContent(db, { articles: settings.offlineText }));
     // Once per launch, after settings load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, ready]);
@@ -101,6 +126,7 @@ function AppShell() {
       <Stack.Screen name="share" options={{ presentation: 'transparentModal', animation: 'fade' }} />
       </Stack>
       <DialogHost />
+      {Platform.OS !== 'web' ? <ShareWatcher /> : null}
     </>
   );
 }

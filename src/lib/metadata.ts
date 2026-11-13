@@ -3,7 +3,7 @@
 // retried with a link-preview crawler user agent that social sites answer with full previews.
 import { detectPlatform, fallbackTitle, type Platform } from './platform';
 import { hostname, resolveUrl } from './url';
-import { isWeakTitle, parseHtmlMetadata, parseInstagramEmbed, type LinkMetadata } from './metadataParse';
+import { isWeakTitle, parseHtmlMetadata, parseInstagramEmbed, tidySocialTitle, type LinkMetadata } from './metadataParse';
 import { deviceAcceptLanguage, readHtml } from './htmlText';
 
 export type { LinkMetadata };
@@ -45,7 +45,8 @@ function usableImage(src: string | null | undefined): string | null {
 }
 
 function result(url: string, platform: Platform, data: Partial<LinkMetadata>): LinkMetadata {
-  const title = data.title && !isWeakTitle(data.title, url) ? data.title : fallbackTitle(url);
+  const raw = data.title && !isWeakTitle(data.title, url) ? data.title : fallbackTitle(url);
+  const title = platform.key === 'web' ? raw : tidySocialTitle(raw);
   return {
     title: title.length > 300 ? `${title.slice(0, 297)}…` : title,
     description: data.description ?? null,
@@ -165,7 +166,19 @@ function merge(base: Partial<LinkMetadata> | null, extra: Partial<LinkMetadata> 
 // Social sites answer link-preview crawlers with full meta tags but show login walls to browsers.
 const CRAWLER_FIRST = new Set<Platform['key']>(['instagram', 'facebook', 'threads', 'reddit', 'linkedin', 'pinterest']);
 
-export async function fetchMetadata(url: string): Promise<LinkMetadata> {
+// Short share links (vt.tiktok.com/..., vm.tiktok.com/...) redirect to the real post; oEmbed only knows the latter.
+async function expandShortLink(url: string): Promise<string> {
+  if (!/^https?:\/\/(vm|vt)\.tiktok\.com\//i.test(url) && !/^https?:\/\/(www\.)?tiktok\.com\/t\//i.test(url)) return url;
+  try {
+    const res = await fetchWithTimeout(url, { headers: { 'User-Agent': BROWSER_UA } });
+    return res.url && res.url !== url ? res.url.split('?')[0] : url;
+  } catch {
+    return url;
+  }
+}
+
+export async function fetchMetadata(sharedUrl: string): Promise<LinkMetadata> {
+  const url = await expandShortLink(sharedUrl);
   const platform = detectPlatform(url);
   let best: Partial<LinkMetadata> | null = null;
 

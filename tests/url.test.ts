@@ -35,7 +35,7 @@ test('normalizeUrl strips share-sheet tracking parameters', () => {
   assert.equal(normalizeUrl('https://example.com/a?utm_source=x&id=7&fbclid=1'), 'https://example.com/a?id=7');
   // Parameters that matter on other sites stay.
   assert.equal(normalizeUrl('https://example.com/search?s=bread&t=1'), 'https://example.com/search?s=bread&t=1');
-  assert.equal(normalizeUrl('https://www.tiktok.com/@a/video/1?_r=1&_t=8abc&lang=es'), 'https://www.tiktok.com/@a/video/1?lang=es');
+  assert.equal(normalizeUrl('https://www.tiktok.com/@a/video/1?_r=1&_t=8abc&lang=es'), 'https://www.tiktok.com/@a/video/1');
 });
 
 test('likeTerms splits words, drops tag hashes and escapes wildcards', async () => {
@@ -67,4 +67,11 @@ test('cleanTagName strips hashes and spaces and rejects empty tags', async () =>
   assert.equal(cleanTagName('#'), '');
   assert.equal(cleanTagName(' # # '), '');
   assert.equal(cleanTagName('x'.repeat(60)).length, MAX_TAG_LENGTH);
+});
+
+test('Instagram and TikTok post links drop every query parameter', async () => {
+  const { normalizeUrl } = await import('../src/lib/url');
+  assert.equal(normalizeUrl('https://www.instagram.com/reel/DfnZbp9BIrX/?vrfl=MXdzazR2eHo1a3RqNQ=='), 'https://www.instagram.com/reel/DfnZbp9BIrX/');
+  assert.equal(normalizeUrl('https://www.instagram.com/reel/DeUtwSCIkww/?psln=MXd5MnV5eWdtdjcxZw=='), 'https://www.instagram.com/reel/DeUtwSCIkww/');
+  assert.equal(normalizeUrl('https://www.instagram.com/someuser/?hl=es'), 'https://www.instagram.com/someuser/?hl=es');
 });

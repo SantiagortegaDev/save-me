@@ -23,8 +23,20 @@ const TRACKING_BY_HOST: [RegExp, string[]][] = [
   [/(^|\.)pinterest\.\w+$/, ['invite_code', 'sender', 'sfo']],
 ];
 
+// Posts on these sites are identified by the path alone; Instagram now adds randomly named share parameters
+// (?vrfl=, ?psln=, ?obrf=...) that a fixed list cannot catch.
+const PATH_ONLY_CONTENT: [RegExp, RegExp][] = [
+  [/(^|\.)instagram\.com$/, /^\/(?:[^/]+\/)?(p|reel|reels|tv)\//],
+  [/(^|\.)tiktok\.com$/, /^\/@[^/]+\/(video|photo)\//],
+  [/(^|\.)threads\.(net|com)$/, /^\/@[^/]+\/post\//],
+];
+
 function stripTracking(url: URL) {
   const host = url.hostname.replace(/^www\./, '');
+  if (PATH_ONLY_CONTENT.some(([h, path]) => h.test(host) && path.test(url.pathname))) {
+    url.search = '';
+    return;
+  }
   const hostParams = TRACKING_BY_HOST.find(([re]) => re.test(host))?.[1] ?? [];
   for (const key of [...url.searchParams.keys()]) {
     if (TRACKING_ANYWHERE.test(key) || hostParams.includes(key)) url.searchParams.delete(key);

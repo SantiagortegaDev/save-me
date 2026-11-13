@@ -44,3 +44,12 @@ test('site name suffixes are dropped from titles', async () => {
   assert.equal(withoutSiteSuffix('Pan - Blog', 'Blog', 'https://b.es'), 'Pan - Blog'); // too short to cut
   assert.equal(withoutSiteSuffix('Rock | Paper | Scissors', 'Other', 'https://x.com'), 'Rock | Paper | Scissors');
 });
+
+test('social titles drop the "X on Instagram:" wrapper and long captions are cut', async () => {
+  const { tidySocialTitle, isWeakTitle } = await import('../src/lib/metadataParse');
+  assert.equal(tidySocialTitle('Max Johnson on Instagram: "Stop vibe coding fake sites, do these instead"'), 'Stop vibe coding fake sites, do these instead');
+  const long = tidySocialTitle(`Pispeo on Instagram: "${'GUARDÁ esto si te encantó una película y querés otra igual '.repeat(4)}"`);
+  assert.ok(long.length <= 121 && long.endsWith('…'));
+  assert.equal(tidySocialTitle('Plain video title'), 'Plain video title');
+  assert.equal(isWeakTitle('TikTok - Make Your Day', 'https://vt.tiktok.com/x/'), true);
+});

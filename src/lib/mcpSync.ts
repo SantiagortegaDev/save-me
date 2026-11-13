@@ -355,6 +355,15 @@ async function syncOnce(db: SQLiteDatabase): Promise<void> {
   }
 }
 
+// Uploads right away (e.g. after saving from the share sheet, just before SaveMe goes to the background),
+// so Claude's copy on the server has the new save without waiting for the next app launch.
+export async function flushMcpSync(db: SQLiteDatabase, timeoutMs: number): Promise<void> {
+  const state = await loadMcpState(db);
+  if (!state?.enabled) return;
+  dirty = true;
+  await Promise.race([syncNow(db).catch(() => {}), new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
+}
+
 let stop: (() => void) | null = null;
 
 export function startMcpSync(db: SQLiteDatabase): void {

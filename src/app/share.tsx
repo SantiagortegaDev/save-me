@@ -2,8 +2,8 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useIncomingShare, type SharePayload } from 'expo-sharing';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionPicker } from '../components/CollectionPicker';
@@ -11,6 +11,8 @@ import { Button, Icon, Text } from '../components/ui';
 import { moveSave } from '../db/repo';
 import { INBOX_ID } from '../db/schema';
 import { haptic } from '../lib/haptics';
+import { flushMcpSync } from '../lib/mcpSync';
+import { isShareHandled, markShareHandled, shareSignature } from '../lib/shareState';
 import { saveImage, saveLink } from '../lib/saving';
 import { extractUrl, hostname } from '../lib/url';
 import { brutal, colors, radius, spacing, themed } from '../theme';
@@ -18,8 +20,10 @@ import { useTheme } from '../lib/theme';
 
 type Incoming = { kind: 'link'; url: string } | { kind: 'image'; uri: string; mimeType: string | null };
 
-function close() {
-  if (router.canGoBack()) router.back();
+function leaveSaveMe(cameFromShare: boolean) {
+  // On Android, finishing goes straight back to the app the share came from.
+  if (cameFromShare && Platform.OS === 'android') BackHandler.exitApp();
+  else if (router.canGoBack()) router.back();
   else router.replace('/');
 }
 
@@ -34,6 +38,29 @@ export default function ShareScreen() {
   const [done, setDone] = useState<'saved' | 'duplicate' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const savedItems = useRef(new Set<number>());
+  const signature = shareSignature(sharedPayloads);
+
+  // A share that was already saved or dismissed (re-delivered when reopening from Recents) is ignored.
+  useEffect(() => {
+    if (!signature) return;
+    let cancelled = false;
+    isShareHandled(db, signature).then((handled) => {
+      if (!handled || cancelled) return;
+      clearSharedPayloads();
+      if (router.canGoBack()) router.back();
+      else router.replace('/');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [db, signature, clearSharedPayloads]);
+
+  async function close() {
+    if (busy || done) return;
+    await markShareHandled(db, signature);
+    clearSharedPayloads();
+    leaveSaveMe(!!signature);
+  }
 
   const items = useMemo<Incoming[]>(() => {
     const out: Incoming[] = [];
@@ -72,10 +99,14 @@ export default function ShareScreen() {
         } else await saveImage(db, item.uri, { mimeType: item.mimeType, collectionId, pinned });
         savedItems.current.add(index);
       }
+      await markShareHandled(db, signature);
       clearSharedPayloads();
       haptic.success();
       setDone(duplicates === items.length ? 'duplicate' : 'saved');
-      setTimeout(close, duplicates === items.length ? 1400 : 900);
+      // Show the confirmation, push the new save to Claude's copy if it is connected, then go back.
+      const shown = new Promise((resolve) => setTimeout(resolve, duplicates === items.length ? 1300 : 900));
+      await Promise.all([shown, flushMcpSync(db, 3000)]);
+      leaveSaveMe(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
