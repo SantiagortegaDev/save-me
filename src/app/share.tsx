@@ -21,13 +21,22 @@ import { useTheme } from '../lib/theme';
 type Incoming = { kind: 'link'; url: string } | { kind: 'image'; uri: string; mimeType: string | null };
 
 function leaveSaveMe(cameFromShare: boolean) {
-  // On Android, finishing goes straight back to the app the share came from.
-  if (cameFromShare && Platform.OS === 'android') BackHandler.exitApp();
-  else if (router.canGoBack()) router.back();
+  // Close the sheet first: on Android 12+ exiting only moves SaveMe to the background, and a sheet left open
+  // would be reused (still showing "Saved!") the next time something is shared.
+  if (router.canGoBack()) router.back();
   else router.replace('/');
+  // On Android, finishing goes straight back to the app the share came from.
+  if (cameFromShare && Platform.OS === 'android') setTimeout(() => BackHandler.exitApp(), 50);
 }
 
+// Keyed by what was shared, so a new share reaching an already open sheet starts from scratch
+// instead of reusing the previous one's "Saved!" state.
 export default function ShareScreen() {
+  const { sharedPayloads } = useIncomingShare();
+  return <ShareSheet key={shareSignature(sharedPayloads)} />;
+}
+
+function ShareSheet() {
   useTheme();
   const db = useSQLiteContext();
   const insets = useSafeAreaInsets();
